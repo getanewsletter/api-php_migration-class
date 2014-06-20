@@ -22,12 +22,12 @@ class GAPI {
   /*
    * Adress som används för uppkoppling mot servern.
    */
-  var $address = 'admin.getanewsletter.com';
+  var $address = 'gantest.com';
 
   /*
    * Port som används för uppkoppling mot servern
    */
-  var $port = '80';
+  var $port = '8001';
 
   /*
    * Innehåller felkod vid eventuella fel från XML-RPC
