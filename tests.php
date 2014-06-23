@@ -148,7 +148,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
         $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
         foreach ($keys as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
         }
 
         // The empty fields must return the string '<nil/>':
@@ -207,7 +207,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
         //$this->assertEquals(count(array_keys($this->api->result[0])), 5);
         foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
         }
     }
 
@@ -219,7 +219,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
         //$this->assertEquals(count(array_keys($this->api->result[0])), 3);
         foreach(Array('usage', 'code', 'name') as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
         }
 
         // When there are no attributes, the method returns boolean true:
