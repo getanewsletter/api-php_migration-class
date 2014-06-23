@@ -14,6 +14,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // with default options.
         $this->api->reports_listing();
         $this->report_id = $this->api->result[0]['id'];
+        $this->bad_report_id = 'xxx';
     }
 
     public function test__reports_listing() {
@@ -35,6 +36,9 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
     }
 
     public function test__reports_bounces() {
+        $result = $this->api->reports_bounces($this->bad_report_id);
+        $this->assertFalse($result);
+
         // List all bounces:
         $result = $this->api->reports_bounces($this->report_id);
         $this->assertTrue($result);
@@ -62,6 +66,20 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->reports_bounces($this->report_id, 'soft', 10, 20);
         $this->assertTrue($result);
         $this->assertEquals(count($this->api->result), 10);
+
+        // Giving other that 'soft' or 'hard' filter returns all the results:
+        $result = $this->api->reports_bounces($this->report_id, 'something else');
+        $this->assertTrue($result);
+        $this->assertEquals(count($this->api->result), 30);
+    }
+
+    public function test__reports_link_clicks() {
+        $result = $this->api->reports_link_clicks($this->bad_report_id);
+        $this->assertFalse($result);
+
+        // $result = $this->api->reports_link_clicks($this->report_id, '3');
+        // $this->assertTrue($result);
+        // print_r($this->api->result);
     }
 }
 
