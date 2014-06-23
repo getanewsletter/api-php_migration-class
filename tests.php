@@ -68,7 +68,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertEquals($this->api->result[0]['email'], 'existing@example.com');
         $this->assertEquals($this->api->result[0]['first_name'], 'firstname');
         $this->assertEquals($this->api->result[0]['last_name'], 'lastname');
-        $this->assertEquals($this->api->result[0]['attributes'], Array('foo'=>'bar'));
+        $this->assertTrue(array_key_exists('foo', $this->api->result[0]['attributes']));
+        $this->assertEquals($this->api->result[0]['attributes']['foo'], 'bar');
         $this->assertEquals($this->api->result[0]['newsletters'], Array());
 
         // Get it without the attributes:
@@ -101,7 +102,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->api->contact_show('created@example.com', True);
         $this->assertEquals($this->api->result[0]['first_name'], 'name');
         $this->assertEquals($this->api->result[0]['last_name'], 'last name');
-        $this->assertEquals($this->api->result[0]['attributes'], Array('foo'=>'fighter'));
+        $this->assertEquals($this->api->result[0]['attributes']['foo'], 'fighter');
 
         // Try to create already existing contact in 'overwrite' mode:
         $result = $this->api->contact_create('created@example.com', null, 'new name', Array('foo'=>'bar'), 4);
@@ -202,7 +203,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->newsletters_show();
         $this->assertTrue($result);
 
-        $this->assertEquals(count($this->api->result), 2);
+        $this->assertEquals(count($this->api->result), 3);
 
         //$this->assertEquals(count(array_keys($this->api->result[0])), 5);
         foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
