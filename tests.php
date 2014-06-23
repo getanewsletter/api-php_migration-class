@@ -8,8 +8,9 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
     protected $ok_pass = '123456789';
     protected $bad_user = 'wrong';
     protected $bad_pass = 'creds';
-    protected $list_hash = 'HuYM5MtGCrEKHWEE';
-    protected $bad_list_hash = 'no list';
+    protected $empty_list = 'HuYM5MtGCrEKHWEE';
+    protected $good_list = '7UhL8k8bfAFh';
+    protected $bad_list = 'no list';
 
     protected function setUp() {
         $this->api = new GAPI($this->ok_user, $this->ok_pass);
@@ -17,11 +18,25 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->api->attribute_create('foo');
 
         // These contacts shouldn't exist:
-        $this->api->contact_delete('non-existing@example.com');
+        $this->api->contact_delete('non-existent@example.com');
         $this->api->contact_delete('created@example.com');
+        $this->api->contact_delete('created2@example.com');
         // These should:
         $this->api->contact_create('existing@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
         $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
+
+        // Clean up subscriptions:
+        if ($this->api->subscriptions_listing($this->good_list)) {
+            foreach ($this->api->result as $subscription) {
+                $this->api->subscription_delete($subscription['email'], $this->good_list);
+            }
+        };
+    }
+
+    protected function set_up_subscriptions() {
+        for ($i = 0; $i < 5; $i++) {
+            $this->api->subscription_add('subscriber' . $i . '@example.com', $this->good_list);
+        }
     }
 
     public function test__login() {
@@ -41,45 +56,55 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
     }
 
     public function test__contact_show() {
-        // Try retrieving a non-existing contact:
-        $this->assertFalse($this->api->contact_show('non-existing@example.com'));
+        // Try retrieving a non-existent contact:
+        $result = $this->api->contact_show('non-existent@example.com');
+        $this->assertFalse($result);
 
         // Get existing contact with the attributes:
-        $this->assertTrue($this->api->contact_show('existing@example.com', True));
+        $result = $this->api->contact_show('existing@example.com', True);
+        $this->assertTrue($result);
+        //$this->assertEquals(count(array_keys($this->api->result[0])), 7);
         $this->assertEquals($this->api->result[0]['email'], 'existing@example.com');
         $this->assertEquals($this->api->result[0]['first_name'], 'firstname');
         $this->assertEquals($this->api->result[0]['last_name'], 'lastname');
         $this->assertEquals($this->api->result[0]['attributes'], Array('foo'=>'bar'));
+        $this->assertEquals($this->api->result[0]['newsletters'], Array());
 
         // Get it without the attributes:
-        $this->assertTrue($this->api->contact_show('existing@example.com', False));
+        $result = $this->api->contact_show('existing@example.com', False);
+        $this->assertTrue($result);
+        //$this->assertEquals(count(array_keys($this->api->result[0])), 6);
         $this->assertFalse(array_key_exists('attributes', $this->api->result[0]));
     }
 
     public function test__contact_create() {
         // Create contact:
-        $this->assertTrue($this->api->contact_create('created@example.com', 'name'));
+        $result = $this->api->contact_create('created@example.com', 'name');
+        $this->assertTrue($result);
 
         // Try to create already existing account:
-        $this->assertFalse($this->api->contact_create('created@example.com', 'name'));
+        $result = $this->api->contact_create('created@example.com', 'name');
+        $this->assertFalse($result);
 
         // Try to create already existing contact in 'quiet' mode:
-        $this->assertTrue($this->api->contact_create('created@example.com', 'new name', null, Array('foo'=>'bar'), 2));
+        $result = $this->api->contact_create('created@example.com', 'new name', null, Array('foo'=>'bar'), 2);
+        $this->assertTrue($result);
         // The contact should not be changed:
         $this->api->contact_show('created@example.com');
         $this->assertEquals($this->api->result[0]['first_name'], 'name');
 
         // Try to create already existing contact in 'update' mode:
-        $this->assertTrue($this->api->contact_create('created@example.com', null, 'last name',
-            Array('foo'=>'fighter'), 3));
+        $result = $this->api->contact_create('created@example.com', null, 'last name', Array('foo'=>'fighter'), 3);
+        $this->assertTrue($result);
+
         $this->api->contact_show('created@example.com', True);
         $this->assertEquals($this->api->result[0]['first_name'], 'name');
         $this->assertEquals($this->api->result[0]['last_name'], 'last name');
         $this->assertEquals($this->api->result[0]['attributes'], Array('foo'=>'fighter'));
 
         // Try to create already existing contact in 'overwrite' mode:
-        $this->assertTrue($this->api->contact_create('created@example.com', null, 'new name',
-            Array('foo'=>'bar'), 4));
+        $result = $this->api->contact_create('created@example.com', null, 'new name', Array('foo'=>'bar'), 4);
+        $this->assertTrue($result);
         $this->api->contact_show('created@example.com', True);
         $this->assertEquals($this->api->result[0]['first_name'], '<nil/>');
         $this->assertEquals($this->api->result[0]['last_name'], 'new name');
@@ -88,15 +113,100 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
     public function test__contact_delete() {
         // Try deleting a non-existing account:
-        $this->assertFalse($this->api->contact_delete('non-existing@example.com'));
+        $result = $this->api->contact_delete('non-existent@example.com');
+        $this->assertFalse($result);
+
         // Delete existing account:
-        $this->assertTrue($this->api->contact_delete('existing_del@example.com'));
+        $result = $this->api->contact_delete('existing_del@example.com');
+        $this->assertTrue($result);
         $this->assertFalse($this->api->contact_show('existing_del@example.com'));
     }
 
     public function test__subscriptions_listing() {
-        $this->assertFalse($this->api->subscriptions_listing($this->bad_list_hash));
-        // TODO ...
+        $this->set_up_subscriptions();
+
+        // Try listing a non-existent subscription list:
+        $result = $this->api->subscriptions_listing($this->bad_list, 0, 2);
+        $this->assertFalse($result);
+
+        // Try listsing an empty subscription list:
+        $result = $this->api->subscriptions_listing($this->empty_list, 0, 2);
+        $this->assertFalse($result);
+
+        // Listing non-empty subscription list:
+        $result = $this->api->subscriptions_listing($this->good_list, 0, 2);
+        $this->assertTrue($result);
+        $this->assertEquals(count($this->api->result), 2);
+
+        $result = $this->api->subscriptions_listing($this->good_list);
+        $this->assertTrue($result);
+        $this->assertEquals(count($this->api->result), 5);
+
+        //$this->assertEquals(count(array_keys($this->api->result[0])), 6);
+
+        $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
+        foreach ($keys as $key) {
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+        }
+
+        // The empty fields must return the string '<nil/>':
+        $this->assertEquals($this->api->result[0]['api-key'], '<nil/>');
+    }
+
+    public function test__subscription_delete() {
+        $this->set_up_subscriptions();
+
+        // Deleting non-existent subscription or non-existent list:
+        $result = $this->api->subscription_delete('non-existent@example.com', $this->good_list);
+        $this->assertFalse($result);
+
+        $result = $this->api->subscription_delete('subscriber1@example.com', $this->bad_list);
+        $this->assertFalse($result);
+
+        // Deleting a subscription:
+        $result = $this->api->subscription_delete('subscriber1@example.com', $this->good_list);
+        $this->assertTrue($result);
+
+        $this->api->subscriptions_listing($this->good_list);
+        foreach ($this->api->result as $subscription) {
+            $this->assertNotEquals($subscription['email'], 'subscriber1@example.com');
+        }
+    }
+
+    public function test__subscription_add() {
+        // Adding a subscription:
+        $result = $this->api->subscription_add('existing@exmple.com', $this->good_list);
+        $this->assertTrue($result);
+
+        // Adding a new contact with subscription:
+        $result = $this->api->subscription_add('created@example.com', $this->good_list, 'firstname', 'lastname', true,
+            null, true, Array('foo'=>'bar'));
+        $this->assertTrue($result);
+
+        $this->api->contact_show('created@example.com', true);
+        $this->assertEquals($this->api->result[0]['first_name'], 'firstname');
+        $this->assertEquals($this->api->result[0]['last_name'], 'lastname');
+        $this->assertEquals($this->api->result[0]['newsletters'][0]['list_id'], $this->good_list);
+
+        // Trying to create existing subscription again or in non-existent list:
+        $result = $this->api->subscription_add('created@example.com', $this->good_list);
+        $this->assertFalse($result);
+        $result = $this->api->subscription_add('created_new@example.com', $this->bad_list);
+        $this->assertFalse($result);
+    }
+
+    public function test__newsletters_show() {
+        $this->set_up_subscriptions();
+
+        $result = $this->api->newsletters_show();
+        $this->assertTrue($result);
+
+        $this->assertEquals(count($this->api->result), 2);
+
+        //$this->assertEquals(count(array_keys($this->api->result[0])), 5);
+        foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+        }
     }
 }
 
