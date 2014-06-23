@@ -16,6 +16,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->api = new GAPI($this->ok_user, $this->ok_pass);
 
         $this->api->attribute_create('foo');
+        $this->api->attribute_delete('spam');
 
         // These contacts shouldn't exist:
         $this->api->contact_delete('non-existent@example.com');
@@ -207,6 +208,46 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
             $this->assertTrue(array_key_exists($key, $this->api->result[0]));
         }
+    }
+
+    public function test__attribute_listing() {
+        $result = $this->api->attribute_listing();
+        $this->assertTrue($result);
+
+        $this->assertEquals(count($this->api->result), 1);
+
+        //$this->assertEquals(count(array_keys($this->api->result[0])), 3);
+        foreach(Array('usage', 'code', 'name') as $key) {
+            $this->assertTrue(array_key_exists($key, $this->api->result[0]));
+        }
+
+        // When there are no attributes, the method returns boolean true:
+        $result = $this->api->attribute_delete('foo');
+        $this->api->attribute_listing();
+        $this->assertEquals(gettype($this->api->result), 'boolean');
+        $this->assertEquals($this->api->result, true);
+    }
+
+    public function test__attribute_create() {
+        $result = $this->api->attribute_create('spam');
+        $this->assertTrue($result);
+
+        $this->api->attribute_listing();
+        $this->assertEquals(count($this->api->result), 2);
+
+        $attrs = array_filter($this->api->result, function ($o) { return $o['name'] == 'spam'; });
+        $this->assertEquals(count($attrs), 1);
+    }
+
+    public function test__attribute_delete() {
+        $result = $this->api->attribute_delete('not existing');
+        $this->assertFalse($result);
+
+        $result = $this->api->attribute_delete('foo');
+        $this->assertTrue($result);
+        $this->api->attribute_listing();
+        $this->assertEquals(gettype($this->api->result), 'boolean');
+        $this->assertEquals($this->api->result, true);
     }
 }
 
