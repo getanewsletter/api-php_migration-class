@@ -24,14 +24,14 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
         $result = $this->api->reports_listing();
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 1);
+        $this->assertCount(1, $this->api->result);
 
         // WARNING: The old tool returns a key with typo: 'unsubsribe' instead of 'unsubscribe':
         $keys = Array('lists', 'date' , 'sent_to', 'unsubsribe', 'unique_opens', 'url', 'bounces', 'id', 'link_click',
-                      'subject', 'opens');
+                      'subject', 'opens', 'ffuuu');
 
         foreach($keys as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0]);
         }
     }
 
@@ -42,44 +42,46 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // List all bounces:
         $result = $this->api->reports_bounces($this->report_id);
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 30);
+        $this->assertCount(30, $this->api->result);
         foreach(Array('status', 'email') as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0], 'Missing key: ' . $key);
         }
 
         // List some bounces:
         $result = $this->api->reports_bounces($this->report_id, null, 10, 20);
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 10);
+        $this->assertCount(10, $this->api->result);
 
         // Filter bounces by type. Soft:
         $result = $this->api->reports_bounces($this->report_id, 'soft');
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 24);
+        $this->assertCount(24, $this->api->result);
 
         // Filter bounces by type. Hard:
         $result = $this->api->reports_bounces($this->report_id, 'hard');
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 6);
+        $this->assertCount(6, $this->api->result);
 
         // Combine filter with limit:
         $result = $this->api->reports_bounces($this->report_id, 'soft', 10, 20);
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 10);
+        $this->assertCount(10, $this->api->result);
 
         // Giving other that 'soft' or 'hard' filter returns all the results:
         $result = $this->api->reports_bounces($this->report_id, 'something else');
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 30);
+        $this->assertCount(30, $this->api->result);
     }
 
     public function test__reports_link_clicks() {
         $result = $this->api->reports_link_clicks($this->bad_report_id);
         $this->assertFalse($result);
 
-        // $result = $this->api->reports_link_clicks($this->report_id, '3');
-        // $this->assertTrue($result);
-        // print_r($this->api->result);
+        $result = $this->api->reports_link_clicks($this->report_id);
+        $this->assertTrue($result);
+        $this->assertCount(18, $this->api->result);
+
+        // ...
     }
 }
 

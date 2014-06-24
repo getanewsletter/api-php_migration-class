@@ -64,19 +64,19 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // Get existing contact with the attributes:
         $result = $this->api->contact_show('existing@example.com', True);
         $this->assertTrue($result);
-        //$this->assertEquals(count(array_keys($this->api->result[0])), 7);
+
         $this->assertEquals($this->api->result[0]['email'], 'existing@example.com');
         $this->assertEquals($this->api->result[0]['first_name'], 'firstname');
         $this->assertEquals($this->api->result[0]['last_name'], 'lastname');
-        $this->assertTrue(array_key_exists('foo', $this->api->result[0]['attributes']));
+        $this->assertArrayHasKey('foo', $this->api->result[0]['attributes']);
         $this->assertEquals($this->api->result[0]['attributes']['foo'], 'bar');
         $this->assertEquals($this->api->result[0]['newsletters'], Array());
 
         // Get it without the attributes:
         $result = $this->api->contact_show('existing@example.com', False);
         $this->assertTrue($result);
-        //$this->assertEquals(count(array_keys($this->api->result[0])), 6);
-        $this->assertFalse(array_key_exists('attributes', $this->api->result[0]));
+
+        $this->assertArrayHasKey('attributes', $this->api->result[0]);
     }
 
     public function test__contact_create() {
@@ -138,17 +138,15 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // Listing non-empty subscription list:
         $result = $this->api->subscriptions_listing($this->good_list, 0, 2);
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 2);
+        $this->assertCount(2, $this->api->result);
 
         $result = $this->api->subscriptions_listing($this->good_list);
         $this->assertTrue($result);
-        $this->assertEquals(count($this->api->result), 5);
-
-        //$this->assertEquals(count(array_keys($this->api->result[0])), 6);
+        $this->assertCount(5, $this->api->result);
 
         $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
         foreach ($keys as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
         // The empty fields must return the string '<nil/>':
@@ -203,11 +201,10 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->newsletters_show();
         $this->assertTrue($result);
 
-        $this->assertEquals(count($this->api->result), 3);
+        $this->assertCount(3, $this->api->result);
 
-        //$this->assertEquals(count(array_keys($this->api->result[0])), 5);
         foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0]);
         }
     }
 
@@ -215,17 +212,16 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->attribute_listing();
         $this->assertTrue($result);
 
-        $this->assertEquals(count($this->api->result), 1);
+        $this->assertCount(1, $this->api->result);
 
-        //$this->assertEquals(count(array_keys($this->api->result[0])), 3);
         foreach(Array('usage', 'code', 'name') as $key) {
-            $this->assertTrue(array_key_exists($key, $this->api->result[0]), 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
         // When there are no attributes, the method returns boolean true:
         $result = $this->api->attribute_delete('foo');
         $this->api->attribute_listing();
-        $this->assertEquals(gettype($this->api->result), 'boolean');
+        $this->assertInternalType('boolean', $this->api->result);
         $this->assertEquals($this->api->result, true);
     }
 
@@ -234,10 +230,10 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
 
         $this->api->attribute_listing();
-        $this->assertEquals(count($this->api->result), 2);
+        $this->assertCount(2, $this->api->result);
 
         $attrs = array_filter($this->api->result, function ($o) { return $o['name'] == 'spam'; });
-        $this->assertEquals(count($attrs), 1);
+        $this->assertCount(1, $attrs);
     }
 
     public function test__attribute_delete() {
@@ -247,7 +243,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->attribute_delete('foo');
         $this->assertTrue($result);
         $this->api->attribute_listing();
-        $this->assertEquals(gettype($this->api->result), 'boolean');
+        $this->assertInternalType('boolean', $this->api->result);
         $this->assertEquals($this->api->result, true);
     }
 }
