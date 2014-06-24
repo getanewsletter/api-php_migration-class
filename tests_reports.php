@@ -28,7 +28,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
         // WARNING: The old tool returns a key with typo: 'unsubsribe' instead of 'unsubscribe':
         $keys = Array('lists', 'date' , 'sent_to', 'unsubsribe', 'unique_opens', 'url', 'bounces', 'id', 'link_click',
-                      'subject', 'opens', 'ffuuu');
+                      'subject', 'opens');
 
         foreach($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
@@ -44,7 +44,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
         $this->assertCount(30, $this->api->result);
         foreach(Array('status', 'email') as $key) {
-            $this->assertArrayHasKey($key, $this->api->result[0], 'Missing key: ' . $key);
+            $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
         // List some bounces:
