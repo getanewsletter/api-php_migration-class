@@ -81,7 +81,59 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
         $this->assertCount(18, $this->api->result);
 
-        // ...
+        // Filter by link URL:
+        $url = $this->api->result[0]['url'];
+        $result = $this->api->reports_link_clicks($this->report_id, $url);
+        $this->assertTrue($result);
+        $this->assertCount(3, $this->api->result);
+        foreach($this->api->result as $link) {
+            $this->assertEquals($url, $link['url']);
+        }
+
+        //Test limits:
+        $result = $this->api->reports_link_clicks($this->report_id, null, 10, 15);
+        $this->assertTrue($result);
+        $this->assertCount(5, $this->api->result);
+    }
+
+    public function test__reports_links() {
+        $result = $this->api->reports_links($this->report_id);
+        $this->assertTrue($result);
+        $this->assertCount(4, $this->api->result);
+
+        foreach(Array('count', 'link') as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
+
+        $this->assertEquals(3, $this->api->result[0]['count']);
+        $this->assertEquals(6, $this->api->result[1]['count']);
+        $this->assertEquals(9, $this->api->result[2]['count']);
+        $this->assertEquals(0, $this->api->result[3]['count']);
+    }
+
+    public function test__reports_opens() {
+        $result = $this->api->reports_opens($this->report_id);
+        $this->assertTrue($result);
+        $this->assertCount(120, $this->api->result);
+
+        foreach(Array('count', 'first_view', 'email', 'last_view') as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
+    }
+
+    public function test__reports_unsubscribes() {
+        $result = $this->api->reports_unsubscribes($this->report_id);
+        $this->assertTrue($result);
+        $this->assertCount(10, $this->api->result);
+
+        foreach(Array('email', 'date') as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
+
+        // Test with limits:
+        $result = $this->api->reports_unsubscribes($this->report_id, 2, 6);
+        $this->assertTrue($result);
+        $this->assertCount(4, $this->api->result);
     }
 }
 
