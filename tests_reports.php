@@ -1,11 +1,17 @@
 <?php
 
 require_once("./GAPI.class.php");
+require_once('./local_settings.php');
 
 class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
-    protected $ok_user = 'tester2';
-    protected $ok_pass = '123456789';
+    protected $ok_user;
+    protected $ok_pass;
+
+    function __construct() {
+        $this->ok_user = $GLOBALS['OK_USER_REPORTS'];
+        $this->ok_pass = $GLOBALS['OK_PASS_REPORTS'];
+    }
 
     protected function setUp() {
         $this->api = new GAPI($this->ok_user, $this->ok_pass);

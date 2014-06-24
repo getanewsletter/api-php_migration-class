@@ -8,4 +8,6 @@ $EMPTY_LIST = 'HuYM5MtGCrEKHWEE';
 $GOOD_LIST = '7UhL8k8bfAFh';
 $BAD_LIST = 'no list';
 
+$OK_USER_REPORTS = 'tester2';
+$OK_PASS_REPORTS = '123456789';
 ?>
