@@ -76,7 +76,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $result = $this->api->contact_show('existing@example.com', False);
         $this->assertTrue($result);
 
-        $this->assertArrayHasKey('attributes', $this->api->result[0]);
+        $this->assertArrayNotHasKey('attributes', $this->api->result[0]);
     }
 
     public function test__contact_create() {
