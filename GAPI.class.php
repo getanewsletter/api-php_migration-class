@@ -13,7 +13,8 @@ use \Httpful\Request;
  *
  */
 
-class GAPI {
+class GAPI
+{
 
     /*
      * Aktuell version av gränssnittet
@@ -92,7 +93,8 @@ class GAPI {
      *
      */
 
-    function GAPI($username, $password) {
+    function GAPI($username, $password)
+    {
         $this->username = $username;
         $this->password = $password;
 
@@ -121,7 +123,8 @@ class GAPI {
      *
      */
 
-    function show_errors() {
+    function show_errors()
+    {
         return $this->errorCode . ": " . $this->errorMessage;
     }
 
@@ -139,7 +142,8 @@ class GAPI {
      *
      */
 
-    function login() {
+    function login()
+    {
         return $this->check_login();
     }
 
@@ -156,11 +160,13 @@ class GAPI {
      * Eventuella fel finns i $errorCode
      * och $errorMessage
      */
-    function check_login() {
+    function check_login()
+    {
         return $this->call_api(Http::GET, 'user');
     }
 
-    private static function parse_errors($body) {
+    private static function parse_errors($body)
+    {
         $errors = '';
         if (is_array($body)) {
             foreach($body as $field => $error) {
@@ -179,7 +185,8 @@ class GAPI {
         return $errors;
     }
 
-    function call_api($method, $endpoint, $args=null) {
+    function call_api($method, $endpoint, $args=null)
+    {
         $uri = $this->address . '/' . $this->api_version . '/' . $endpoint . '/';
 
         $request = Request::init($method)->uri($uri);
@@ -233,7 +240,8 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function contact_create($email, $first_name = null, $last_name = null, $attributes = array(), $mode = 1) {
+    function contact_create($email, $first_name = null, $last_name = null, $attributes = array(), $mode = 1)
+    {
         $data = array(
             'email' => $email,
             'first_name' => $first_name,
@@ -337,7 +345,8 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function contact_delete($email) {
+    function contact_delete($email)
+    {
         return $this->call_api(Http::DELETE, 'contacts/' . $email);
     }
 
@@ -356,7 +365,8 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function contact_show($email, $show_attributes = False) {
+    function contact_show($email, $show_attributes = False)
+    {
         $attributes = array();
 
         if ($show_attributes) {
@@ -410,30 +420,28 @@ class GAPI {
         return $status;
     }
 
-    // /*
-     // * subscription_delete($email, list_id)
-     // *
-     // * Tar bort en prenumeration från ett nyhetsbrev
-     // *
-     // * Argument
-     // * =========
-     // * $email     = Kontaktens e-postadress
-     // * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
-     // *
-     // * Returvärden
-     // * =========
-     // * Sant/Falskt
-     // *
-     // * Eventuella fel finns i $errorCode
-     // * och $errorMessage
-     // *
-     // */
-    // function subscription_delete($email, $list_id) {
-        // $params = Array();
-        // $params[] = $email;
-        // $params[] = $list_id;
-        // return $this -> callServer('subscriptions.delete', $params);
-    // }
+    /*
+     * subscription_delete($email, list_id)
+     *
+     * Tar bort en prenumeration från ett nyhetsbrev
+     *
+     * Argument
+     * =========
+     * $email     = Kontaktens e-postadress
+     * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
+     *
+     * Returvärden
+     * =========
+     * Sant/Falskt
+     *
+     * Eventuella fel finns i $errorCode
+     * och $errorMessage
+     *
+     */
+    function subscription_delete($email, $list_id)
+    {
+        return $this->call_api(Http::DELETE, 'lists/'. $list_id . '/subscribers/' . $email);
+    }
 
     /*
      * newsletter_show()
@@ -448,7 +456,8 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function newsletters_show() {
+    function newsletters_show()
+    {
         $ok = $this->call_api(Http::GET, 'lists');
         if ($ok) {
             $this->result = array();
@@ -466,39 +475,50 @@ class GAPI {
         return $ok;
     }
 
-    // /*
-     // * subscription_listing($list_id, $start=NULL, $end=NULL)
-     // *
-     // * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
-     // *
-     // * Argument
-     // * =========
-     // * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
-     // * $start	= Post som listningen ska börja på
-     // * $end 	= Post som listningen ska sluta på
-     // *
-     // * Returvärden
-     // * =========
-     // * Array med prenumerationer för ett nyhetsbrev
-     // *
-     // * Eventuella fel finns i $errorCode
-     // * och $errorMessage
-     // *
-     // */
-//
-    // function subscriptions_listing($list_id, $start = NULL, $end = NULL) {
-        // $params = Array();
-        // $params[] = $list_id;
-        // $params[] = $start;
-        // $params[] = $end;
-//
-        // return $this -> callServer('subscriptions.listing', $params);
-    // }
+    /*
+     * subscription_listing($list_id, $start=NULL, $end=NULL)
+     *
+     * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
+     *
+     * Argument
+     * =========
+     * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
+     * $start	= Post som listningen ska börja på
+     * $end 	= Post som listningen ska sluta på
+     *
+     * Returvärden
+     * =========
+     * Array med prenumerationer för ett nyhetsbrev
+     *
+     * Eventuella fel finns i $errorCode
+     * och $errorMessage
+     *
+     */
+
+    function subscriptions_listing($list_id, $start = null, $end = null)
+    {
+        $ok = $this->call_api(Http::GET, 'lists/' . $list_id . '/subscribers');
+        if ($ok) {
+            $this->result = array();
+            foreach($this->response->body['results'] as $subs) {
+                $this->result[] = array(
+                    'confirmed' => $subs['created'],    // In APIv3 all subscriptions are confirmed.
+                    'created' => $subs['created'],
+                    'api-key' => '<nil/>',    // In APIv3 api-key is not used.
+                    'active' => '???',    // TODO: See if you can add 'active' field into the API.
+                    'cancelled' => $subs['cancelled'] ? $subs['cancelled'] : '<nil/>',
+                    'email' => $subs['contact']
+                );
+            }
+        }
+        return $ok;
+    }
 
     /**
      * Returns attribute code by given attribute name.
      */
-    private function attribute_get_code($name) {
+    private function attribute_get_code($name)
+    {
         $ok = $this->attribute_listing();
         if(!$ok) {
             return null;
@@ -516,11 +536,13 @@ class GAPI {
         return null;
     }
 
-    function attribute_create($name) {
+    function attribute_create($name)
+    {
         return $this->call_api(Http::POST, 'attributes', array('name' => $name));
     }
 
-    function attribute_delete($name) {
+    function attribute_delete($name)
+    {
         $code = $this->attribute_get_code($name);
         if ($code) {
             return $this->call_api(Http::DELETE, 'attributes/' . $code);
@@ -529,7 +551,8 @@ class GAPI {
         }
     }
 
-    function attribute_listing() {
+    function attribute_listing()
+    {
         $ok = $this->call_api(Http::GET, 'attributes');
         if ($ok) {
             $this->result = $this->response->body['results'];

@@ -3,7 +3,8 @@
 require_once("./GAPI.class.php");
 require_once('./local_settings.php');
 
-class Test_PHP_API extends PHPUnit_Framework_TestCase {
+class Test_PHP_API extends PHPUnit_Framework_TestCase
+{
 
     protected $ok_user;
     protected $ok_pass;
@@ -14,7 +15,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
     protected $second_list;
     protected $bad_list;
 
-    function __construct() {
+    function __construct()
+    {
         $this->ok_user = $GLOBALS['OK_USER'];
         $this->ok_user = $GLOBALS['OK_USER'];
         $this->ok_pass = $GLOBALS['OK_PASS'];
@@ -26,17 +28,18 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->bad_list = $GLOBALS['BAD_LIST'];
     }
 
-    protected function setUp() {
+    protected function setUp()
+    {
         $this->api = new GAPI($this->ok_user, $this->ok_pass);
 
         // Clean up subscriptions:
-        // foreach(array($this->first_list, $this->second_list) as $list) {
-            // if ($this->api->subscriptions_listing($list)) {
-                // foreach ($this->api->result as $subscription) {
-                    // $this->api->subscription_delete($subscription['email'], $list);
-                // }
-            // }
-        // }
+        foreach(array($this->first_list, $this->second_list) as $list) {
+            if ($this->api->subscriptions_listing($list)) {
+                foreach ($this->api->result as $subscription) {
+                    $this->api->subscription_delete($subscription['email'], $list);
+                }
+            }
+        }
 
         // These contacts shouldn't exist:
         $this->api->contact_delete('non-existent@example.com');
@@ -55,7 +58,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
     }
 
-    protected function set_up_subscriptions() {
+    protected function set_up_subscriptions()
+    {
         for ($i = 0; $i < 5; $i++) {
             $this->api->subscription_add('subscriber' . $i . '@example.com', $this->first_list);
         }
@@ -63,7 +67,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
 
     // TODO: Add test for connection failure.
 
-    public function x__test__login() {
+    public function test__login()
+    {
         $api = new GAPI($this->bad_user, $this->bad_pass);
         $this->assertFalse($api->login());
 
@@ -71,7 +76,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($api->login());
     }
 
-    public function x__test__check_login() {
+    public function test__check_login()
+    {
         $api = new GAPI($this->bad_user, $this->bad_pass);
         $this->assertFalse($api->check_login());
 
@@ -79,7 +85,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($api->check_login());
     }
 
-    public function x__test__contact_show() {
+    public function test__contact_show()
+    {
         // Try retrieving a non-existent contact:
         $result = $this->api->contact_show('non-existent@example.com');
         $this->assertFalse($result);
@@ -102,7 +109,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertArrayNotHasKey('attributes', $this->api->result[0]);
     }
 
-    public function x__test__contact_create() {
+    public function test__contact_create()
+    {
         // Create contact:
         $result = $this->api->contact_create('created@example.com', 'name', '', Array('foo'=>''));
         $this->assertTrue($result);
@@ -151,7 +159,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertEquals(Array('foo' => 'bar', 'baz' => '<nil/>'), $this->api->result[0]['attributes']);
     }
 
-    public function x__test__contact_delete() {
+    public function test__contact_delete()
+    {
         // Try deleting a non-existing account:
         $result = $this->api->contact_delete('non-existent@example.com');
         $this->assertFalse($result);
@@ -162,56 +171,60 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertFalse($this->api->contact_show('existing_del@example.com'));
     }
 
-    // public function test__subscriptions_listing() {
-        // $this->set_up_subscriptions();
-//
-        // // Try listing a non-existent subscription list:
-        // $result = $this->api->subscriptions_listing($this->bad_list, 0, 2);
-        // $this->assertFalse($result);
-//
-        // // Try listsing an empty subscription list:
-        // $result = $this->api->subscriptions_listing($this->empty_list, 0, 2);
-        // $this->assertFalse($result);
-//
+    public function test__subscriptions_listing()
+    {
+        $this->set_up_subscriptions();
+
+        // Try listing a non-existent subscription list:
+        $result = $this->api->subscriptions_listing($this->bad_list, 0, 2);
+        $this->assertFalse($result);
+
+        // Try listsing an empty subscription list:
+        $result = $this->api->subscriptions_listing($this->empty_list, 0, 2);
+        $this->assertFalse($result);
+
+        // // TODO: See how to implement $start and $end here.
         // // Listing non-empty subscription list:
         // $result = $this->api->subscriptions_listing($this->first_list, 0, 2);
         // $this->assertTrue($result);
         // $this->assertCount(2, $this->api->result);
-//
-        // $result = $this->api->subscriptions_listing($this->first_list);
-        // $this->assertTrue($result);
-        // $this->assertCount(5, $this->api->result);
-//
-        // $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
-        // foreach ($keys as $key) {
-            // $this->assertArrayHasKey($key, $this->api->result[0]);
-        // }
-//
-        // // The empty fields must return the string '<nil/>':
-        // $this->assertEquals('<nil/>', $this->api->result[0]['api-key']);
-    // }
-//
-    // public function test__subscription_delete() {
-        // $this->set_up_subscriptions();
-//
-        // // Deleting non-existent subscription or non-existent list:
-        // $result = $this->api->subscription_delete('non-existent@example.com', $this->first_list);
-        // $this->assertFalse($result);
-//
-        // $result = $this->api->subscription_delete('subscriber1@example.com', $this->bad_list);
-        // $this->assertFalse($result);
-//
-        // // Deleting a subscription:
-        // $result = $this->api->subscription_delete('subscriber1@example.com', $this->first_list);
-        // $this->assertTrue($result);
-//
-        // $this->api->subscriptions_listing($this->first_list);
-        // foreach ($this->api->result as $subscription) {
-            // $this->assertNotEquals($subscription['email'], 'subscriber1@example.com');
-        // }
-    // }
 
-    public function test__subscription_add() {
+        $result = $this->api->subscriptions_listing($this->first_list);
+        $this->assertTrue($result);
+        $this->assertCount(5, $this->api->result);
+
+        $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
+        foreach ($keys as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
+
+        // The empty fields must return the string '<nil/>':
+        $this->assertEquals('<nil/>', $this->api->result[0]['api-key']);
+    }
+
+    public function test__subscription_delete()
+    {
+        $this->set_up_subscriptions();
+
+        // Deleting non-existent subscription or non-existent list:
+        $result = $this->api->subscription_delete('non-existent@example.com', $this->first_list);
+        $this->assertFalse($result);
+
+        $result = $this->api->subscription_delete('subscriber1@example.com', $this->bad_list);
+        $this->assertFalse($result);
+
+        // Deleting a subscription:
+        $result = $this->api->subscription_delete('subscriber1@example.com', $this->first_list);
+        $this->assertTrue($result);
+
+        $this->api->subscriptions_listing($this->first_list);
+        foreach ($this->api->result as $subscription) {
+            $this->assertNotEquals($subscription['email'], 'subscriber1@example.com');
+        }
+    }
+
+    public function test__subscription_add()
+    {
         // Adding a subscription:
         // Note: if the contact exists, it will work like contact_create in 'overwrite' mode (4).
         $result = $this->api->subscription_add('existing@example.com', $this->first_list, 'new firstname');
@@ -244,7 +257,20 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertFalse($result);
     }
 
-    public function x__test__newsletters_show() {
+    public function test__contact_create_with_subscriptions()
+    {
+        $result = $this->api->subscription_add('existing@example.com', $this->first_list, 'new firstname');
+        $this->api->contact_show('existing@example.com', true);
+        $this->assertCount(1, $this->api->result[0]['newsletters']);
+
+        $result = $this->api->contact_create('existing@example.com', null, 'new lastname', Array('foo' => 'bar'), 4);
+        $this->assertTrue($result);
+        $this->api->contact_show('existing@example.com', True);
+        $this->assertCount(1, $this->api->result[0]['newsletters']);
+    }
+
+    public function test__newsletters_show()
+    {
         // Important! You need to have 3 lists in the test account:
         // the default ones: Standard list, Test list,
         // and one that you need to create manually - Empty list.
@@ -259,7 +285,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         }
     }
 
-    public function x__test__attribute_listing() {
+    public function test__attribute_listing()
+    {
         $result = $this->api->attribute_listing();
         $this->assertTrue($result);
 
@@ -278,7 +305,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertEquals(true, $this->api->result);
     }
 
-    public function x__test__attribute_create() {
+    public function test__attribute_create()
+    {
         $result = $this->api->attribute_create('spam');
         $this->assertTrue($result);
 
@@ -289,7 +317,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertCount(1, $attrs);
     }
 
-    public function x__test__attribute_delete() {
+    public function test__attribute_delete()
+    {
         $result = $this->api->attribute_listing();
         $this->assertTrue($result);
 
