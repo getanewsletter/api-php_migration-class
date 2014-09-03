@@ -233,7 +233,7 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function contact_create($email, $first_name = null, $last_name = null, $attributes = Array(), $mode = 1) {
+    function contact_create($email, $first_name = null, $last_name = null, $attributes = array(), $mode = 1) {
         $data = array(
             'email' => $email,
             'first_name' => $first_name,
@@ -261,44 +261,64 @@ class GAPI {
         }
     }
 
-    // /*
-     // * subscription_add($email, $list_id, $first_name=NULL, $last_name=NULL, $confirmation=False, $api_key=NULL)
-     // *
-     // * Lägger till en kontakt (om den ej redan existerar) och en prenumeration till ett nyhetsbrev.
-     // *
-     // * Argument
-     // * ==========
-     // * $email        = E-postadress som ska läggas till
-     // * $list_id      = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
-     // * $first_name   = Kontaktens förnamn
-     // * $last_name    = Kontaktens efternamn
-     // * $confirmation = Ska bekräftelse skickas ut till prenumeranten? Falskt som standard.
-     // *                 Krävs om prenumeration är avslutad tidigare
-     // * $api_key      = Nyckel för att kunna spåra varifrån en prenumeration kommer, hittas
-     // *                 i menyn Kontakter->Listor & API när du är inloggad på Get a Newsletter
-     // *
-     // * Det är endast $email och $list_id som är obligatoriskt.
-     // *
-     // * Returvärden
-     // * =========
-     // * Sant/Falskt
-     // *
-     // * Eventuella fel finns i $errorCode
-     // * och $errorMessage
-     // *
-     // */
-    // function subscription_add($email, $list_id, $first_name = NULL, $last_name = NULL, $confirmation = False, $api_key = NULL, $autoresponder = True, $attributes = Array()) {
-        // $params = Array();
-        // $params[] = $email;
-        // $params[] = $list_id;
-        // $params[] = $first_name;
-        // $params[] = $last_name;
-        // $params[] = $confirmation;
-        // $params[] = $api_key;
-        // $params[] = $autoresponder;
-        // $params[] = $attributes;
-        // return $this -> callServer('subscriptions.add', $params);
-    // }
+    /*
+     * subscription_add($email, $list_id, $first_name=NULL, $last_name=NULL, $confirmation=False, $api_key=NULL)
+     *
+     * Lägger till en kontakt (om den ej redan existerar) och en prenumeration till ett nyhetsbrev.
+     *
+     * Argument
+     * ==========
+     * $email        = E-postadress som ska läggas till
+     * $list_id      = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
+     * $first_name   = Kontaktens förnamn
+     * $last_name    = Kontaktens efternamn
+     * $confirmation = Ska bekräftelse skickas ut till prenumeranten? Falskt som standard.
+     *                 Krävs om prenumeration är avslutad tidigare
+     * $api_key      = Nyckel för att kunna spåra varifrån en prenumeration kommer, hittas
+     *                 i menyn Kontakter->Listor & API när du är inloggad på Get a Newsletter
+     *
+     * Det är endast $email och $list_id som är obligatoriskt.
+     *
+     * Returvärden
+     * =========
+     * Sant/Falskt
+     *
+     * Eventuella fel finns i $errorCode
+     * och $errorMessage
+     *
+     */
+    function subscription_add(
+        $email, $list_id, $first_name = null, $last_name = null, $confirmation = false, $api_key = null,
+        $autoresponder = true, $attributes = array()
+    ) {
+        $lists = array();
+
+        if ($this->contact_show($email)) {
+            foreach($this->result[0]['newsletters'] as $list) {
+                $lists[] = array('hash' => $list['list_id'], 'confirmed' =>  true);
+                if ($list['list_id'] == $list_id) {
+                    $this->errorCode = 405;
+                    $this->errorMessage = 'The subscription already exists.';
+                    return false;
+                }
+            }
+        }
+
+        $lists[] = array('hash' => $list_id, 'confirmed' =>  true);
+
+        $data = array(
+            'email' => $email,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'lists' => $lists
+        );
+
+        if (!empty($attributes)) {
+            $data['attributes'] = $attributes;
+        }
+
+        return $this->call_api(Http::PUT, 'contacts/' . $email, $data);
+    }
 
     /*
      * contact_delete()
@@ -353,8 +373,6 @@ class GAPI {
         $status = $this->call_api(Http::GET, 'contacts/' . $email);
         if ($status) {
             $data = $this->response->body;
-            $data['newsletters'] = $data['lists'];
-            unset($data['lists']);
 
             if (!$data['first_name']) {
                 $data['first_name'] = '<nil/>';
@@ -373,6 +391,19 @@ class GAPI {
                     $data['attributes'][$name] = $value;
                 }
             }
+
+            $data['newsletters'] = array();
+            foreach($data['lists'] as $list) {
+                $data['newsletters'][] = array(
+                    'confirmed' => $list['subscription_created'],   // In APIv3 all subscriptions are confirmed.
+                    'created' => $list['subscription_created'],
+                    'api-key' => '<nil/>',  // No api-keys in APIv3.
+                    'list_id' => $list['hash'],
+                    'cancelled' => $list['subscription_cancelled'] ? $list['subscription_cancelled'] : '<nil/>',
+                    'newsletter' => $list['name']
+                );
+            }
+            unset($data['lists']);
 
             $this->result = array($data);
         }

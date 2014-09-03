@@ -142,5 +142,3 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertCount(4, $this->api->result);
     }
 }
-
-?>
