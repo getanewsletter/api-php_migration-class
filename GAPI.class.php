@@ -79,11 +79,6 @@ class GAPI {
      */
     private $response;
 
-    /**
-     * Used for easier mapping of the attribute names and codes.
-     */
-    private $attribute_cache = array();
-
     /*
      * GAPI()
      *
@@ -101,7 +96,7 @@ class GAPI {
         $this->username = $username;
         $this->password = $password;
 
-        $json_handler = new Httpful\Handlers\JsonHandler(array('decode_as_array'=>true));
+        $json_handler = new Httpful\Handlers\JsonHandler(array('decode_as_array' => true));
         Httpful\Httpful::register('application/json', $json_handler);
 
         $template = Request::init()
@@ -168,7 +163,7 @@ class GAPI {
     private static function parse_errors($body) {
         $errors = '';
         if (is_array($body)) {
-            foreach($body as $field=>$error) {
+            foreach($body as $field => $error) {
                 if (is_array($error)) {
                     foreach($error as $error_string) {
                         $errors .= $error_string . ' ';
@@ -238,20 +233,28 @@ class GAPI {
      * och $errorMessage
      *
      */
-    function contact_create($email, $first_name = NULL, $last_name = NULL, $attributes = Array(), $mode = 1) {
+    function contact_create($email, $first_name = null, $last_name = null, $attributes = Array(), $mode = 1) {
         $data = array(
-            'email'=>$email,
-            'first_name'=>$first_name,
-            'last_name'=>$last_name,
-            'attributes'=>$attributes
+            'email' => $email,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
         );
+
+        if (!empty($attributes)) {
+            $data['attributes'] = $attributes;
+        }
 
         if ($mode == 1) {
             return $this->call_api(Http::POST, 'contacts', $data);
         } else if ($mode == 2) {
             $this->call_api(Http::POST, 'contacts', $data);
             return true;
-        } else if ($mode == 4) {
+        } else if ($mode == 3) {
+            foreach($data as $field => $value) {
+                if (!$value) {
+                    unset($data[$field]);
+                }
+            }
             return $this->call_api(Http::PATCH, 'contacts/' . $email, $data);
         } else {
             return $this->call_api(Http::PUT, 'contacts/' . $email, $data);
@@ -334,18 +337,44 @@ class GAPI {
      *
      */
     function contact_show($email, $show_attributes = False) {
+        $attributes = array();
+
+        if ($show_attributes) {
+            $ok = $this->attribute_listing();
+            if (!$ok) {
+                return false;
+            }
+
+            foreach($this->result as $attr) {
+                $attributes[$attr['name']] = '<nil/>';
+            }
+        }
+
         $status = $this->call_api(Http::GET, 'contacts/' . $email);
         if ($status) {
             $data = $this->response->body;
             $data['newsletters'] = $data['lists'];
             unset($data['lists']);
 
-            // TODO: Check if $show_attributes should be removed.
-            if (!$show_attributes) {
-                unset($data['attributes']);
+            if (!$data['first_name']) {
+                $data['first_name'] = '<nil/>';
+            }
+            if (!$data['last_name']) {
+                $data['last_name'] = '<nil/>';
             }
 
-            $this->result = [$data];
+            $contact_attributes = $data['attributes'];
+
+            if (!$show_attributes) {
+                unset($data['attributes']);
+            } else {
+                $data['attributes'] = $attributes;
+                foreach($contact_attributes as $name => $value) {
+                    $data['attributes'][$name] = $value;
+                }
+            }
+
+            $this->result = array($data);
         }
         return $status;
     }
@@ -374,24 +403,38 @@ class GAPI {
         // $params[] = $list_id;
         // return $this -> callServer('subscriptions.delete', $params);
     // }
-//
-    // /*
-     // * newsletter_show()
-     // *
-     // * Listar befintliga nyhetsbrev
-     // *
-     // * Returvärden
-     // * =========
-     // * Sant/Falskt
-     // *
-     // * Eventuella fel finns i $errorCode
-     // * och $errorMessage
-     // *
-     // */
-    // function newsletters_show() {
-        // return $this -> callServer('newsletter.listing');
-    // }
-//
+
+    /*
+     * newsletter_show()
+     *
+     * Listar befintliga nyhetsbrev
+     *
+     * Returvärden
+     * =========
+     * Sant/Falskt
+     *
+     * Eventuella fel finns i $errorCode
+     * och $errorMessage
+     *
+     */
+    function newsletters_show() {
+        $ok = $this->call_api(Http::GET, 'lists');
+        if ($ok) {
+            $this->result = array();
+
+            foreach($this->response->body['results'] as $list) {
+                $this->result[] = array(
+                    'newsletter' => $list['name'],
+                    'sender' => $list['sender'].' '.$list['email'],
+                    'description' => $list['description'] ? $list['description'] : '<nil/>',
+                    'subscribers' => $list['active_subscribers_count'],
+                    'list_id' => $list['hash'],
+                );
+            }
+        }
+        return $ok;
+    }
+
     // /*
      // * subscription_listing($list_id, $start=NULL, $end=NULL)
      // *
@@ -425,24 +468,25 @@ class GAPI {
      * Returns attribute code by given attribute name.
      */
     private function attribute_get_code($name) {
-        if (!array_key_exists($name, $this->attribute_cache)) {
-            $status = $this->attribute_listing();
-            if (!$status) {
-                return null;
+        $ok = $this->attribute_listing();
+        if(!$ok) {
+            return null;
+        }
+
+        $attribute_list = array();
+        foreach($this->result as $value) {
+            if ($value['name'] == $name) {
+                return $value['code'];
             }
         }
 
-        if (!array_key_exists($name, $this->attribute_cache)) {
-            $this->errorCode = 404;
-            $this->errorMessage = 'Attribute not found.';
-            return null;
-        } else {
-            return $this->attribute_cache[$name]['code'];
-        }
+        $this->errorCode = 404;
+        $this->errorMessage = 'Attribute not found.';
+        return null;
     }
 
     function attribute_create($name) {
-        return $this->call_api(Http::POST, 'attributes', array('name'=>$name));
+        return $this->call_api(Http::POST, 'attributes', array('name' => $name));
     }
 
     function attribute_delete($name) {
@@ -459,21 +503,15 @@ class GAPI {
         if ($ok) {
             $this->result = $this->response->body['results'];
 
-            // Clean up the cache:
-            $this->attribute_cache = array();
-
             if(empty($this->result)) {
                 // A weird behaviour from the old API:
                 // When the result should be empty it returns boolean true.
                 // TODO: Check if we should be consisted with this... thing.
                 $this->result = true;
             } else {
-                foreach($this->result as $id=>$value) {
+                foreach($this->result as $id => $value) {
                     $this->result[$id]['usage'] = $value['usage_count'];
                     unset($this->result[$id]['usage_count']);
-
-                    // Save the attribute to the cache:
-                    $this->attribute_cache[$value['name']] = $value;
                 }
             }
         }

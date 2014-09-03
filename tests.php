@@ -27,34 +27,35 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
     protected function setUp() {
         $this->api = new GAPI($this->ok_user, $this->ok_pass);
 
-        $this->api->attribute_create('foo');
-        $this->api->attribute_create('baz');
-        $this->api->attribute_delete('spam');
-
-        // These contacts shouldn't exist:
-        $this->api->contact_delete('non-existent@example.com');
-        $this->api->contact_delete('created@example.com');
-        $this->api->contact_delete('created2@example.com');
-        // // These should be cleaned up:
-        // $this->api->contact_delete('existing@example.com');
-        // $this->api->contact_delete('existing_del@example.com');
-        // // These should:
-        // $this->api->contact_create('existing@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
-        // $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
-
-        // // Clean up subscriptions:
+        // Clean up subscriptions:
         // if ($this->api->subscriptions_listing($this->good_list)) {
             // foreach ($this->api->result as $subscription) {
                 // $this->api->subscription_delete($subscription['email'], $this->good_list);
             // }
         // };
+
+        // These contacts shouldn't exist:
+        $this->api->contact_delete('non-existent@example.com');
+        $this->api->contact_delete('created@example.com');
+        $this->api->contact_delete('created2@example.com');
+        // These should be cleaned up:
+        $this->api->contact_delete('existing@example.com');
+        $this->api->contact_delete('existing_del@example.com');
+
+        $this->api->attribute_create('foo');
+        $this->api->attribute_create('baz');
+        $this->api->attribute_delete('spam');
+
+        // These should exist:
+        $this->api->contact_create('existing@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
+        $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
     }
 
-    // protected function set_up_subscriptions() {
-        // for ($i = 0; $i < 5; $i++) {
-            // $this->api->subscription_add('subscriber' . $i . '@example.com', $this->good_list);
-        // }
-    // }
+    protected function set_up_subscriptions() {
+        for ($i = 0; $i < 5; $i++) {
+            $this->api->subscription_add('subscriber' . $i . '@example.com', $this->good_list);
+        }
+    }
 
     // TODO: Add test for connection failure.
 
@@ -97,9 +98,9 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertArrayNotHasKey('attributes', $this->api->result[0]);
     }
 
-    public function test__contact_create() {
+    public function x__test__contact_create() {
         // Create contact:
-        $result = $this->api->contact_create('created@example.com', 'name');
+        $result = $this->api->contact_create('created@example.com', 'name', '', Array('foo'=>''));
         $this->assertTrue($result);
 
         // Try to create already existing account:
@@ -113,43 +114,48 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->api->contact_show('created@example.com', True);
         $this->assertEquals('name', $this->api->result[0]['first_name']);
         $this->assertEquals('<nil/>', $this->api->result[0]['last_name']);
-        $this->assertEquals(Array('foo'=>'<nil/>', 'baz'=>'<nil/>'), $this->api->result[0]['attributes']);
+        $this->assertEquals(Array('foo'=>'', 'baz'=>'<nil/>'), $this->api->result[0]['attributes']);
 
         // Create second contact:
         $result = $this->api->contact_create('created2@example.com', 'name', null, Array('baz' => 'qux'));
         $this->assertTrue($result);
 
         // Try to create already existing contact in 'update' mode:
-        $result = $this->api->contact_create('created@example.com', null, 'last name', Array('foo'=>'fighter'), 3);
+        $result = $this->api->contact_create('created2@example.com', null, 'last name', Array('foo'=>'fighter'), 3);
         $this->assertTrue($result);
 
-        $this->api->contact_show('created@example.com', True);
+        $this->api->contact_show('created2@example.com', True);
         $this->assertEquals('name', $this->api->result[0]['first_name']);
         $this->assertEquals('last name', $this->api->result[0]['last_name']);
         $this->assertEquals('fighter', $this->api->result[0]['attributes']['foo']);
-        // It is updating the whole set of attributes, so 'baz' should be empty now:
-        $this->assertEquals('<nil/>', $this->api->result[0]['attributes']['baz']);
+        $this->assertEquals('qux', $this->api->result[0]['attributes']['baz']);
+
+        // In 'update' mode empty values are the same as null values:
+        $result = $this->api->contact_create('created2@example.com', '', null, array(), 3);
+        $this->assertTrue($result);
+        $this->api->contact_show('created2@example.com', True);
+        $this->assertEquals('name', $this->api->result[0]['first_name']);
 
         // Try to create already existing contact in 'overwrite' mode:
-        $result = $this->api->contact_create('created@example.com', null, 'new name', Array('foo'=>'bar'), 4);
+        $result = $this->api->contact_create('created2@example.com', null, 'new name', Array('foo'=>'bar'), 4);
         $this->assertTrue($result);
-        $this->api->contact_show('created@example.com', True);
+        $this->api->contact_show('created2@example.com', True);
         $this->assertEquals('<nil/>', $this->api->result[0]['first_name']);
         $this->assertEquals('new name', $this->api->result[0]['last_name']);
-        $this->assertEquals(Array('foo'=>'bar'), $this->api->result[0]['attributes']);
+        $this->assertEquals(Array('foo'=>'bar', 'baz'=>'<nil/>'), $this->api->result[0]['attributes']);
     }
 
-    // public function test__contact_delete() {
-        // // Try deleting a non-existing account:
-        // $result = $this->api->contact_delete('non-existent@example.com');
-        // $this->assertFalse($result);
-//
-        // // Delete existing account:
-        // $result = $this->api->contact_delete('existing_del@example.com');
-        // $this->assertTrue($result);
-        // $this->assertFalse($this->api->contact_show('existing_del@example.com'));
-    // }
-//
+    public function x__test__contact_delete() {
+        // Try deleting a non-existing account:
+        $result = $this->api->contact_delete('non-existent@example.com');
+        $this->assertFalse($result);
+
+        // Delete existing account:
+        $result = $this->api->contact_delete('existing_del@example.com');
+        $this->assertTrue($result);
+        $this->assertFalse($this->api->contact_show('existing_del@example.com'));
+    }
+
     // public function test__subscriptions_listing() {
         // $this->set_up_subscriptions();
 //
@@ -220,32 +226,36 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // $result = $this->api->subscription_add('created_new@example.com', $this->bad_list);
         // $this->assertFalse($result);
     // }
-//
-    // public function test__newsletters_show() {
-        // $this->set_up_subscriptions();
-//
-        // $result = $this->api->newsletters_show();
-        // $this->assertTrue($result);
-//
-        // $this->assertCount(3, $this->api->result);
-//
-        // foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
-            // $this->assertArrayHasKey($key, $this->api->result[0]);
-        // }
-    // }
+
+    public function test__newsletters_show() {
+        // Important! You need to have 3 lists in the test account:
+        // the default ones: Standard list, Test list,
+        // and one that you need to create manually - Empty list.
+
+        $result = $this->api->newsletters_show();
+        $this->assertTrue($result);
+
+        $this->assertCount(3, $this->api->result);
+
+        foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
+    }
 
     public function x__test__attribute_listing() {
         $result = $this->api->attribute_listing();
         $this->assertTrue($result);
 
-        $this->assertCount(1, $this->api->result);
+        $this->assertCount(2, $this->api->result);
 
         foreach(Array('usage', 'code', 'name') as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
         // When there are no attributes, the method returns boolean true:
+        // TODO: Check if we should be consisted with this behaviour.
         $result = $this->api->attribute_delete('foo');
+        $result = $this->api->attribute_delete('baz');
         $this->api->attribute_listing();
         $this->assertInternalType('boolean', $this->api->result);
         $this->assertEquals(true, $this->api->result);
@@ -256,22 +266,25 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
 
         $this->api->attribute_listing();
-        $this->assertCount(2, $this->api->result);
+        $this->assertCount(3, $this->api->result);
 
         $attrs = array_filter($this->api->result, function ($o) { return $o['name'] == 'spam'; });
         $this->assertCount(1, $attrs);
     }
 
     public function x__test__attribute_delete() {
+        $result = $this->api->attribute_listing();
+        $this->assertTrue($result);
+
+        $this->assertCount(2, $this->api->result);
+
         $result = $this->api->attribute_delete('not existing');
         $this->assertFalse($result);
 
         $result = $this->api->attribute_delete('foo');
         $this->assertTrue($result);
+
         $this->api->attribute_listing();
-        $this->assertInternalType('boolean', $this->api->result);
-        $this->assertEquals(true, $this->api->result);
+        $this->assertCount(1, $this->api->result);
     }
 }
-
-?>
