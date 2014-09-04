@@ -1,6 +1,6 @@
 <?php
 
-require_once("./GAPI.class.php");
+require_once('./GAPI.class.php');
 require_once('./local_settings.php');
 
 class Test_PHP_API extends PHPUnit_Framework_TestCase
@@ -33,7 +33,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->api = new GAPI($this->ok_user, $this->ok_pass);
 
         // Clean up subscriptions:
-        foreach(array($this->first_list, $this->second_list) as $list) {
+        foreach (array($this->first_list, $this->second_list) as $list) {
             if ($this->api->subscriptions_listing($list)) {
                 foreach ($this->api->result as $subscription) {
                     $this->api->subscription_delete($subscription['email'], $list);
@@ -54,8 +54,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->api->attribute_delete('spam');
 
         // These should exist:
-        $this->api->contact_create('existing@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
-        $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', Array('foo'=>'bar'), 4);
+        $this->api->contact_create('existing@example.com', 'firstname', 'lastname', array('foo'=>'bar'), 4);
+        $this->api->contact_create('existing_del@example.com', 'firstname', 'lastname', array('foo'=>'bar'), 4);
     }
 
     protected function set_up_subscriptions()
@@ -100,7 +100,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->assertEquals('lastname', $this->api->result[0]['last_name']);
         $this->assertArrayHasKey('foo', $this->api->result[0]['attributes']);
         $this->assertEquals('bar', $this->api->result[0]['attributes']['foo']);
-        $this->assertEquals(Array(), $this->api->result[0]['newsletters']);
+        $this->assertEquals(array(), $this->api->result[0]['newsletters']);
 
         // Get it without the attributes:
         $result = $this->api->contact_show('existing@example.com', False);
@@ -112,7 +112,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
     public function test__contact_create()
     {
         // Create contact:
-        $result = $this->api->contact_create('created@example.com', 'name', '', Array('foo'=>''));
+        $result = $this->api->contact_create('created@example.com', 'name', '', array('foo'=>''));
         $this->assertTrue($result);
 
         // Try to create already existing account:
@@ -120,20 +120,20 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->assertFalse($result);
 
         // Try to create already existing contact in 'quiet' mode:
-        $result = $this->api->contact_create('created@example.com', 'new name', null, Array('foo'=>'bar'), 2);
+        $result = $this->api->contact_create('created@example.com', 'new name', null, array('foo'=>'bar'), 2);
         $this->assertTrue($result);
         // The contact should not be changed:
         $this->api->contact_show('created@example.com', True);
         $this->assertEquals('name', $this->api->result[0]['first_name']);
         $this->assertEquals('<nil/>', $this->api->result[0]['last_name']);
-        $this->assertEquals(Array('foo'=>'', 'baz'=>'<nil/>'), $this->api->result[0]['attributes']);
+        $this->assertEquals(array('foo'=>'', 'baz'=>'<nil/>'), $this->api->result[0]['attributes']);
 
         // Create second contact:
-        $result = $this->api->contact_create('created2@example.com', 'name', null, Array('baz' => 'qux'));
+        $result = $this->api->contact_create('created2@example.com', 'name', null, array('baz' => 'qux'));
         $this->assertTrue($result);
 
         // Try to create already existing contact in 'update' mode:
-        $result = $this->api->contact_create('created2@example.com', null, 'last name', Array('foo'=>'fighter'), 3);
+        $result = $this->api->contact_create('created2@example.com', null, 'last name', array('foo'=>'fighter'), 3);
         $this->assertTrue($result);
 
         $this->api->contact_show('created2@example.com', True);
@@ -151,12 +151,12 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         // Try to create already existing contact in 'overwrite' mode:
         // Note: All attributes from the array are overwritten. All other will be cleared (i.e. = <nil/>).
         // In this case ['foo' => 'fighter', 'baz' => 'qux'] becomes ['foo'=>'bar', 'baz'=>'<nil/>'].
-        $result = $this->api->contact_create('created2@example.com', null, 'new name', Array('foo' => 'bar'), 4);
+        $result = $this->api->contact_create('created2@example.com', null, 'new name', array('foo' => 'bar'), 4);
         $this->assertTrue($result);
         $this->api->contact_show('created2@example.com', True);
         $this->assertEquals('<nil/>', $this->api->result[0]['first_name']);
         $this->assertEquals('new name', $this->api->result[0]['last_name']);
-        $this->assertEquals(Array('foo' => 'bar', 'baz' => '<nil/>'), $this->api->result[0]['attributes']);
+        $this->assertEquals(array('foo' => 'bar', 'baz' => '<nil/>'), $this->api->result[0]['attributes']);
     }
 
     public function test__contact_delete()
@@ -193,7 +193,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
         $this->assertCount(5, $this->api->result);
 
-        $keys = Array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
+        $keys = array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
         foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
@@ -236,7 +236,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
 
         // Adding a new contact with subscription:
         $result = $this->api->subscription_add('created@example.com', $this->first_list, 'firstname', 'lastname', true,
-            null, true, Array('foo'=>'bar'));
+            null, true, array('foo'=>'bar'));
         $this->assertTrue($result);
 
         $this->api->contact_show('created@example.com', true);
@@ -263,7 +263,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->api->contact_show('existing@example.com', true);
         $this->assertCount(1, $this->api->result[0]['newsletters']);
 
-        $result = $this->api->contact_create('existing@example.com', null, 'new lastname', Array('foo' => 'bar'), 4);
+        $result = $this->api->contact_create('existing@example.com', null, 'new lastname', array('foo' => 'bar'), 4);
         $this->assertTrue($result);
         $this->api->contact_show('existing@example.com', True);
         $this->assertCount(1, $this->api->result[0]['newsletters']);
@@ -280,7 +280,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
 
         $this->assertCount(3, $this->api->result);
 
-        foreach(Array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
+        foreach (array('newsletter', 'sender', 'description', 'subscribers', 'list_id') as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
     }
@@ -292,7 +292,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
 
         $this->assertCount(2, $this->api->result);
 
-        foreach(Array('usage', 'code', 'name') as $key) {
+        foreach (array('usage', 'code', 'name') as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 

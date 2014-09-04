@@ -162,16 +162,16 @@ class GAPI
      */
     function check_login()
     {
-        return $this->call_api(Http::GET, 'user');
+        return $this->call_api(Http::GET, 'user/');
     }
 
     private static function parse_errors($body)
     {
         $errors = '';
         if (is_array($body)) {
-            foreach($body as $field => $error) {
+            foreach ($body as $field => $error) {
                 if (is_array($error)) {
-                    foreach($error as $error_string) {
+                    foreach ($error as $error_string) {
                         $errors .= $error_string . ' ';
                     }
                 } else {
@@ -187,7 +187,7 @@ class GAPI
 
     function call_api($method, $endpoint, $args=null)
     {
-        $uri = $this->address . '/' . $this->api_version . '/' . $endpoint . '/';
+        $uri = $this->address . '/' . $this->api_version . '/' . $endpoint;
 
         $request = Request::init($method)->uri($uri);
 
@@ -213,7 +213,7 @@ class GAPI
     }
 
     /*
-     * contact_create($email, $first_name=NULL, $last_name=NULL, $attributes=NULL, $mode=NULL)
+     * contact_create($email, $first_name=null, $last_name=null, $attributes=null, $mode=null)
      *
      * Skapar eller uppdaterar en kontakt.
      *
@@ -253,24 +253,24 @@ class GAPI
         }
 
         if ($mode == 1) {
-            return $this->call_api(Http::POST, 'contacts', $data);
+            return $this->call_api(Http::POST, 'contacts/', $data);
         } else if ($mode == 2) {
-            $this->call_api(Http::POST, 'contacts', $data);
+            $this->call_api(Http::POST, 'contacts/', $data);
             return true;
         } else if ($mode == 3) {
-            foreach($data as $field => $value) {
+            foreach ($data as $field => $value) {
                 if (!$value) {
                     unset($data[$field]);
                 }
             }
-            return $this->call_api(Http::PATCH, 'contacts/' . $email, $data);
+            return $this->call_api(Http::PATCH, 'contacts/' . $email . '/', $data);
         } else {
-            return $this->call_api(Http::PUT, 'contacts/' . $email, $data);
+            return $this->call_api(Http::PUT, 'contacts/' . $email . '/', $data);
         }
     }
 
     /*
-     * subscription_add($email, $list_id, $first_name=NULL, $last_name=NULL, $confirmation=False, $api_key=NULL)
+     * subscription_add($email, $list_id, $first_name=null, $last_name=null, $confirmation=False, $api_key=null)
      *
      * Lägger till en kontakt (om den ej redan existerar) och en prenumeration till ett nyhetsbrev.
      *
@@ -302,7 +302,7 @@ class GAPI
         $lists = array();
 
         if ($this->contact_show($email)) {
-            foreach($this->result[0]['newsletters'] as $list) {
+            foreach ($this->result[0]['newsletters'] as $list) {
                 $lists[] = array('hash' => $list['list_id'], 'confirmed' =>  true);
                 if ($list['list_id'] == $list_id) {
                     $this->errorCode = 405;
@@ -325,7 +325,7 @@ class GAPI
             $data['attributes'] = $attributes;
         }
 
-        return $this->call_api(Http::PUT, 'contacts/' . $email, $data);
+        return $this->call_api(Http::PUT, 'contacts/' . $email . '/', $data);
     }
 
     /*
@@ -347,7 +347,7 @@ class GAPI
      */
     function contact_delete($email)
     {
-        return $this->call_api(Http::DELETE, 'contacts/' . $email);
+        return $this->call_api(Http::DELETE, 'contacts/' . $email . '/');
     }
 
     /*
@@ -375,12 +375,12 @@ class GAPI
                 return false;
             }
 
-            foreach($this->result as $attr) {
+            foreach ($this->result as $attr) {
                 $attributes[$attr['name']] = '<nil/>';
             }
         }
 
-        $status = $this->call_api(Http::GET, 'contacts/' . $email);
+        $status = $this->call_api(Http::GET, 'contacts/' . $email . '/');
         if ($status) {
             $data = $this->response->body;
 
@@ -397,13 +397,13 @@ class GAPI
                 unset($data['attributes']);
             } else {
                 $data['attributes'] = $attributes;
-                foreach($contact_attributes as $name => $value) {
+                foreach ($contact_attributes as $name => $value) {
                     $data['attributes'][$name] = $value;
                 }
             }
 
             $data['newsletters'] = array();
-            foreach($data['lists'] as $list) {
+            foreach ($data['lists'] as $list) {
                 $data['newsletters'][] = array(
                     'confirmed' => $list['subscription_created'],   // In APIv3 all subscriptions are confirmed.
                     'created' => $list['subscription_created'],
@@ -440,7 +440,7 @@ class GAPI
      */
     function subscription_delete($email, $list_id)
     {
-        return $this->call_api(Http::DELETE, 'lists/'. $list_id . '/subscribers/' . $email);
+        return $this->call_api(Http::DELETE, 'lists/'. $list_id . '/subscribers/' . $email . '/');
     }
 
     /*
@@ -458,11 +458,11 @@ class GAPI
      */
     function newsletters_show()
     {
-        $ok = $this->call_api(Http::GET, 'lists');
+        $ok = $this->call_api(Http::GET, 'lists/');
         if ($ok) {
             $this->result = array();
 
-            foreach($this->response->body['results'] as $list) {
+            foreach ($this->response->body['results'] as $list) {
                 $this->result[] = array(
                     'newsletter' => $list['name'],
                     'sender' => $list['sender'].' '.$list['email'],
@@ -476,7 +476,7 @@ class GAPI
     }
 
     /*
-     * subscription_listing($list_id, $start=NULL, $end=NULL)
+     * subscription_listing($list_id, $start=null, $end=null)
      *
      * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
      *
@@ -497,10 +497,11 @@ class GAPI
 
     function subscriptions_listing($list_id, $start = null, $end = null)
     {
-        $ok = $this->call_api(Http::GET, 'lists/' . $list_id . '/subscribers');
+        // TODO: See how to handle pagination, $start and $end.
+        $ok = $this->call_api(Http::GET, 'lists/' . $list_id . '/subscribers/');
         if ($ok) {
             $this->result = array();
-            foreach($this->response->body['results'] as $subs) {
+            foreach ($this->response->body['results'] as $subs) {
                 $this->result[] = array(
                     'confirmed' => $subs['created'],    // In APIv3 all subscriptions are confirmed.
                     'created' => $subs['created'],
@@ -525,7 +526,7 @@ class GAPI
         }
 
         $attribute_list = array();
-        foreach($this->result as $value) {
+        foreach ($this->result as $value) {
             if ($value['name'] == $name) {
                 return $value['code'];
             }
@@ -538,14 +539,14 @@ class GAPI
 
     function attribute_create($name)
     {
-        return $this->call_api(Http::POST, 'attributes', array('name' => $name));
+        return $this->call_api(Http::POST, 'attributes/', array('name' => $name));
     }
 
     function attribute_delete($name)
     {
         $code = $this->attribute_get_code($name);
         if ($code) {
-            return $this->call_api(Http::DELETE, 'attributes/' . $code);
+            return $this->call_api(Http::DELETE, 'attributes/' . $code . '/');
         } else {
             return false;
         }
@@ -553,7 +554,7 @@ class GAPI
 
     function attribute_listing()
     {
-        $ok = $this->call_api(Http::GET, 'attributes');
+        $ok = $this->call_api(Http::GET, 'attributes/');
         if ($ok) {
             $this->result = $this->response->body['results'];
 
@@ -563,7 +564,7 @@ class GAPI
                 // TODO: Check if we should be consisted with this... thing.
                 $this->result = true;
             } else {
-                foreach($this->result as $id => $value) {
+                foreach ($this->result as $id => $value) {
                     $this->result[$id]['usage'] = $value['usage_count'];
                     unset($this->result[$id]['usage_count']);
                 }
@@ -572,113 +573,181 @@ class GAPI
         return $ok;
     }
 
-    // /*
-     // * reports_bounces($id, $filter, $start=NULL, $end=NULL)
-     // *
-     // * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
-     // *
-     // * Argument
-     // * =========
-     // * $id        = Id för rapporten du vill visa studsar för
-     // * $filter    = Används om du vill filtrera resultatet. Ange "hard" för att
-     // *              endast returnera adresser med hård studs (permanent fel) och
-     // *              "soft" för att endast returnera adresser med temporärt fel. (Valbart)
-     // * $start	= Post som listningen ska börja på
-     // * $end 	= Post som listningen ska sluta på
-     // *
-     // * Returvärden
-     // * =========
-     // * Returnerar en array med följande information för varje rapport:
-     // *
-     // * email       E-post som har studsat
-     // *
-     // * status      Status för aktuell studs, ges som en sifferkombination med följande
-     // *             format X.X.X. Om statusen börjar på en 5:a är det en hård studs
-     // *             (felet är permanent) och om den börjar på 4:a är det en mjuk studs
-     // *             (temporärt fel). Vill du ha mer information om statuskodernas
-     // *             betydelse så kolla i manualen.
-     // *
-     // * Eventuella fel finns i $errorCode och $errorMessage
-     // *
-     // */
-//
-    // function reports_bounces($id, $filter = NULL, $start = NULL, $end = NULL) {
-        // $params = Array();
-        // $params[] = $id;
-        // $params[] = $filter;
-        // $params[] = $start;
-        // $params[] = $end;
-        // return $this -> callServer('reports.bounces', $params);
-    // }
-//
-    // /*
-     // * reports_link_clicks($id, $filter, $start=NULL, $end=NULL)
-     // *
-     // * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.link_clicks/
-     // *
-     // */
-//
-    // function reports_link_clicks($id, $filter = NULL, $start = NULL, $end = NULL) {
-        // $params = Array();
-        // $params[] = $id;
-        // $params[] = $filter;
-        // $params[] = $start;
-        // $params[] = $end;
-        // return $this -> callServer('reports.link_clicks', $params);
-    // }
-//
-    // /*
-     // * reports_links($id)
-     // *
-     // * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.links/
-     // *
-     // */
-//
-    // function reports_links($id) {
-        // $params = Array();
-        // $params[] = $id;
-        // return $this -> callServer('reports.links', $params);
-    // }
-//
-    // /*
-     // * reports_listing($latest)
-     // *
-     // * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.listing
-     // *
-     // */
-//
-    // function reports_listing($latest = True) {
-        // $params = Array();
-        // $params[] = $latest;
-        // return $this -> callServer('reports.listing', $params);
-    // }
-//
-    // /*
-     // * reports_opens($id)
-     // *
-     // * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.opens/
-     // *
-     // */
-//
-    // function reports_opens($id) {
-        // $params = Array();
-        // $params[] = $id;
-        // return $this -> callServer('reports.opens', $params);
-    // }
-//
-    // /*
-     // * reports_unsubscribes($id, $filter, $start=NULL, $end=NULL)
-     // *
-     // * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.unsubscribes/
-     // *
-     // */
-//
-    // function reports_unsubscribes($id, $start = NULL, $end = NULL) {
-        // $params = Array();
-        // $params[] = $id;
-        // $params[] = $start;
-        // $params[] = $end;
-        // return $this -> callServer('reports.unsubscribes', $params);
-    // }
+    /*
+     * reports_bounces($id, $filter, $start=null, $end=null)
+     *
+     * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
+     *
+     * Argument
+     * =========
+     * $id        = Id för rapporten du vill visa studsar för
+     * $filter    = Används om du vill filtrera resultatet. Ange "hard" för att
+     *              endast returnera adresser med hård studs (permanent fel) och
+     *              "soft" för att endast returnera adresser med temporärt fel. (Valbart)
+     * $start	= Post som listningen ska börja på
+     * $end 	= Post som listningen ska sluta på
+     *
+     * Returvärden
+     * =========
+     * Returnerar en array med följande information för varje rapport:
+     *
+     * email       E-post som har studsat
+     *
+     * status      Status för aktuell studs, ges som en sifferkombination med följande
+     *             format X.X.X. Om statusen börjar på en 5:a är det en hård studs
+     *             (felet är permanent) och om den börjar på 4:a är det en mjuk studs
+     *             (temporärt fel). Vill du ha mer information om statuskodernas
+     *             betydelse så kolla i manualen.
+     *
+     * Eventuella fel finns i $errorCode och $errorMessage
+     *
+     */
+
+    function reports_bounces($id, $filter = null, $start = null, $end = null)
+    {
+        // TODO: See how to handle pagination, $start and $end.
+        // TODO: Add filtering in API.
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/bounces/?paginate_by=1000');
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $bounce) {
+                $this->result[] = array(
+                    'status' => $bounce['status'],
+                    'email' => $bounce['contact']
+                );
+            }
+        }
+        return $ok;
+    }
+
+    /*
+     * reports_link_clicks($id, $filter, $start=null, $end=null)
+     *
+     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.link_clicks/
+     *
+     */
+
+    function reports_link_clicks($id, $filter = null, $start = null, $end = null)
+    {
+        // TODO: See how to handle pagination, $start and $end.
+        // TODO: See how to get all unique clicks.
+        $link_id = '???';
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/' . $link_id . '?paginate_by=1000');
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $link) {
+                $this->result[] = array(
+                    'count' => $link['total_clicks'],
+                    'url' => $link['url'],
+                    'first_click'=> $link['first_click'],
+                    'email' => $link['contact'],
+                    'last_click' => $link['last_click']
+                );
+            }
+        }
+        return $ok;
+    }
+
+    /*
+     * reports_links($id)
+     *
+     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.links/
+     *
+     */
+
+    function reports_links($id)
+    {
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/?ordering=id');
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $link) {
+                $this->result[] = array(
+                    'count' => $link['unique_clicks'],
+                    'link' => $link['link']
+                );
+            }
+        }
+        return $ok;
+    }
+
+    /*
+     * reports_listing($latest)
+     *
+     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.listing
+     *
+     */
+
+    function reports_listing($latest = True)
+    {
+        $ordering = $latest ? '-sent' : 'sent';
+        $ok = $this->call_api(Http::GET, 'reports/?orderging=' . $ordering);
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $report) {
+                $this->result[] = array(
+                  'lists' => join(', ', $report['sent_to_lists']),
+                  'date' => $report['sent'],
+                  'sent_to' => $report['sent_to'],
+                  'unsubsribe' => '???',    // TODO: Add 'unsubscribed' to reports list endpoint?,
+                  'unique_opens' => '???',    // TODO: Add 'unique_html_opened' to reports list endpoint?,
+                  'url' => $report['url'],
+                  'bounces' => '???',    // TODO: Add 'bounced' to reports list endpoint?
+                  'id' => $report['id'],
+                  'link_click' => '???',    // TODO: Add 'html_clicks' to report list endpoint?
+                  'subject' => $report['mail_subject'],
+                  'opens' => $report['total_html_opened']
+                );
+            }
+        }
+        return $ok;
+    }
+
+    /*
+     * reports_opens($id)
+     *
+     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.opens/
+     *
+     */
+
+    function reports_opens($id)
+    {
+        // TODO: No limits here? How to avoid the pagination and the 100 results per page limit?
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/opens/?paginate_by=1000');
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $open) {
+                $this->result[] = array(
+                    'count' => $open['count'],
+                    'first_view' => $open['first_view'],
+                    'email' => $open['contact'],
+                    'last_view' => $open['last_view']
+                );
+            }
+        }
+        return $ok;
+    }
+
+    /*
+     * reports_unsubscribes($id, $filter, $start=null, $end=null)
+     *
+     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.unsubscribes/
+     *
+     */
+
+    function reports_unsubscribes($id, $start = null, $end = null)
+    {
+        // TODO: See how to handle pagination, $start and $end.
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/unsubscribed/?paginate_by=1000');
+        if ($ok) {
+            $this->result = array();
+            foreach ($this->response->body['results'] as $unsub) {
+                $this->result[] = array(
+                    'email' => $unsub['contact'],
+                    'date' => $unsub['created']
+                );
+            }
+        }
+        return $ok;
+    }
 
 }
