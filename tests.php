@@ -193,13 +193,15 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
         $this->assertCount(5, $this->api->result);
 
-        $keys = array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
+        // TODO: Field 'api-key' is not supported by APIv3.
+        // $keys = array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
+        $keys = array('confirmed', 'created', 'active', 'cancelled', 'email');
         foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
-        // The empty fields must return the string '<nil/>':
-        $this->assertEquals('<nil/>', $this->api->result[0]['api-key']);
+        // // The empty fields must return the string '<nil/>':
+        // $this->assertEquals('<nil/>', $this->api->result[0]['api-key']);
     }
 
     public function test__subscription_delete()
@@ -301,8 +303,7 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $result = $this->api->attribute_delete('foo');
         $result = $this->api->attribute_delete('baz');
         $this->api->attribute_listing();
-        $this->assertInternalType('boolean', $this->api->result);
-        $this->assertEquals(true, $this->api->result);
+        $this->assertEquals(array(), $this->api->result);
     }
 
     public function test__attribute_create()

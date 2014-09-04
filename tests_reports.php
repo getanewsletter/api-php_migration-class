@@ -35,10 +35,10 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
         $this->assertCount(1, $this->api->result);
 
-        // TODO: See if we should fix the typo and inform the customers.
-        // WARNING: The old tool returns a key with typo: 'unsubsribe' instead of 'unsubscribe':
-        $keys = array('lists', 'date' , 'sent_to', 'unsubsribe', 'unique_opens', 'url', 'bounces', 'id', 'link_click',
-                      'subject', 'opens');
+        // TODO: unsubscribe, unique_opens, bounces, link_click are not present in the report list from the API.
+        //$keys = array('lists', 'date' , 'sent_to', 'unsubscribe', 'unique_opens', 'url', 'bounces', 'id', 'link_click',
+        //              'subject', 'opens');
+        $keys = array('lists', 'date' , 'sent_to', 'url', 'id', 'subject', 'opens');
 
         foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);

@@ -405,9 +405,7 @@ class GAPI
             $data['newsletters'] = array();
             foreach ($data['lists'] as $list) {
                 $data['newsletters'][] = array(
-                    'confirmed' => $list['subscription_created'],   // In APIv3 all subscriptions are confirmed.
                     'created' => $list['subscription_created'],
-                    'api-key' => '<nil/>',  // No api-keys in APIv3.
                     'list_id' => $list['hash'],
                     'cancelled' => $list['subscription_cancelled'] ? $list['subscription_cancelled'] : '<nil/>',
                     'newsletter' => $list['name']
@@ -475,6 +473,7 @@ class GAPI
         return $ok;
     }
 
+    // TODO: State in doc. that $start and $end are ignored ATM.
     /*
      * subscription_listing($list_id, $start=null, $end=null)
      *
@@ -494,19 +493,14 @@ class GAPI
      * och $errorMessage
      *
      */
-
     function subscriptions_listing($list_id, $start = null, $end = null)
     {
-        // TODO: See how to handle pagination, $start and $end.
-        $ok = $this->call_api(Http::GET, 'lists/' . $list_id . '/subscribers/');
+        $ok = $this->call_api(Http::GET, 'lists/' . $list_id . '/subscribers/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $subs) {
                 $this->result[] = array(
-                    'confirmed' => $subs['created'],    // In APIv3 all subscriptions are confirmed.
                     'created' => $subs['created'],
-                    'api-key' => '<nil/>',    // In APIv3 api-key is not used.
-                    'active' => '???',    // TODO: See if you can add 'active' field into the API.
                     'cancelled' => $subs['cancelled'] ? $subs['cancelled'] : '<nil/>',
                     'email' => $subs['contact']
                 );
@@ -558,21 +552,15 @@ class GAPI
         if ($ok) {
             $this->result = $this->response->body['results'];
 
-            if(empty($this->result)) {
-                // A weird behaviour from the old API:
-                // When the result should be empty it returns boolean true.
-                // TODO: Check if we should be consisted with this... thing.
-                $this->result = true;
-            } else {
-                foreach ($this->result as $id => $value) {
-                    $this->result[$id]['usage'] = $value['usage_count'];
-                    unset($this->result[$id]['usage_count']);
-                }
+            foreach ($this->result as $id => $value) {
+                $this->result[$id]['usage'] = $value['usage_count'];
+                unset($this->result[$id]['usage_count']);
             }
         }
         return $ok;
     }
 
+    // TODO: State in doc. that $filter, $start and $end are ignored ATM.
     /*
      * reports_bounces($id, $filter, $start=null, $end=null)
      *
@@ -605,9 +593,7 @@ class GAPI
 
     function reports_bounces($id, $filter = null, $start = null, $end = null)
     {
-        // TODO: See how to handle pagination, $start and $end.
-        // TODO: Add filtering in API.
-        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/bounces/?paginate_by=1000');
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/bounces/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $bounce) {
@@ -620,19 +606,18 @@ class GAPI
         return $ok;
     }
 
+    // TODO: State in doc. that $filter, $start and $end are ignored ATM.
     /*
      * reports_link_clicks($id, $filter, $start=null, $end=null)
      *
      * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.link_clicks/
      *
      */
-
     function reports_link_clicks($id, $filter = null, $start = null, $end = null)
     {
-        // TODO: See how to handle pagination, $start and $end.
-        // TODO: See how to get all unique clicks.
+        // TODO: See how to get all unique clicks or add $link_id argument.
         $link_id = '???';
-        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/' . $link_id . '?paginate_by=1000');
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/' . $link_id . '/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $link) {
@@ -688,12 +673,8 @@ class GAPI
                   'lists' => join(', ', $report['sent_to_lists']),
                   'date' => $report['sent'],
                   'sent_to' => $report['sent_to'],
-                  'unsubsribe' => '???',    // TODO: Add 'unsubscribed' to reports list endpoint?,
-                  'unique_opens' => '???',    // TODO: Add 'unique_html_opened' to reports list endpoint?,
                   'url' => $report['url'],
-                  'bounces' => '???',    // TODO: Add 'bounced' to reports list endpoint?
                   'id' => $report['id'],
-                  'link_click' => '???',    // TODO: Add 'html_clicks' to report list endpoint?
                   'subject' => $report['mail_subject'],
                   'opens' => $report['total_html_opened']
                 );
@@ -711,8 +692,7 @@ class GAPI
 
     function reports_opens($id)
     {
-        // TODO: No limits here? How to avoid the pagination and the 100 results per page limit?
-        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/opens/?paginate_by=1000');
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/opens/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $open) {
@@ -727,17 +707,16 @@ class GAPI
         return $ok;
     }
 
+    // TODO: State in doc. that $start and $end are ignored ATM.
     /*
      * reports_unsubscribes($id, $filter, $start=null, $end=null)
      *
      * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.unsubscribes/
      *
      */
-
     function reports_unsubscribes($id, $start = null, $end = null)
     {
-        // TODO: See how to handle pagination, $start and $end.
-        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/unsubscribed/?paginate_by=1000');
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/unsubscribed/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $unsub) {
