@@ -89,8 +89,8 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // $this->assertCount(30, $this->api->result);
     }
 
-    public function test__reports_link_clicks()
-    {
+    // public function test__reports_link_clicks()
+    // {
         // // TODO: See how to get all unique clicks.
         // $result = $this->api->reports_link_clicks($this->bad_report_id);
         // $this->assertFalse($result);
@@ -120,6 +120,26 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         // $result = $this->api->reports_link_clicks($this->report_id, null, 10, 15);
         // $this->assertTrue($result);
         // $this->assertCount(5, $this->api->result);
+    // }
+
+    public function test__reports_clicks_per_link()
+    {
+        if ($this->api->version == 'v0.1') {
+            return;
+        }
+
+        // Get the id of the first link:
+        $result = $this->api->reports_links($this->report_id);
+        $this->assertTrue($result);
+        $link_id = $this->api->result[0]['id'];
+
+        $result = $this->api->reports_clicks_per_link($this->report_id, $link_id);
+        $this->assertTrue($result);
+
+        $this->assertCount(3, $this->api->result);
+        foreach (array('count', 'url', 'first_click', 'email', 'last_click') as $key) {
+            $this->assertArrayHasKey($key, $this->api->result[0]);
+        }
     }
 
     public function test__reports_links()
@@ -128,7 +148,12 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
         $this->assertCount(4, $this->api->result);
 
-        foreach (array('count', 'link') as $key) {
+        if ($this->api->version != 'v0.1') {
+            $keys = array('count', 'link', 'id');
+        } else {
+            $keys = array('count', 'link');
+        }
+        foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 

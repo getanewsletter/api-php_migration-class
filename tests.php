@@ -193,9 +193,9 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
         $this->assertCount(5, $this->api->result);
 
-        // TODO: Field 'api-key' is not supported by APIv3.
+        // TODO: Fields 'api-key', 'active' and 'confirmed' are not supported by APIv3.
         // $keys = array('confirmed', 'created', 'api-key', 'active', 'cancelled', 'email');
-        $keys = array('confirmed', 'created', 'active', 'cancelled', 'email');
+        $keys = array('created', 'cancelled', 'email');
         foreach ($keys as $key) {
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
@@ -298,12 +298,12 @@ class Test_PHP_API extends PHPUnit_Framework_TestCase
             $this->assertArrayHasKey($key, $this->api->result[0]);
         }
 
-        // When there are no attributes, the method returns boolean true:
-        // TODO: Check if we should be consisted with this behaviour.
-        $result = $this->api->attribute_delete('foo');
-        $result = $this->api->attribute_delete('baz');
-        $this->api->attribute_listing();
-        $this->assertEquals(array(), $this->api->result);
+        if ($this->api->version != 'v0.1') {
+            $result = $this->api->attribute_delete('foo');
+            $result = $this->api->attribute_delete('baz');
+            $this->api->attribute_listing();
+            $this->assertEquals(array(), $this->api->result);
+        }
     }
 
     public function test__attribute_create()
