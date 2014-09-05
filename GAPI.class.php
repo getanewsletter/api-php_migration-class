@@ -5,94 +5,69 @@ use \Httpful\Http;
 use \Httpful\Request;
 
 /*
- * För mer information om APIt till Get a Newsletter besök
- * http://admin.getanewsletter.com/api/
+ * For more information on Get a Newsletter's API visit http://admin.getanewsletter.com/api/.
  *
- * Har du några frågor så skicka ett mejl till oss på
- * support@getanewsletter.com
- *
+ * If you have any questions, please send us an email at support@getanewsletter.com.
  */
-
 class GAPI
 {
 
     /*
-     * Aktuell version av gränssnittet
+     * The current version of the interface.
      */
     var $version = 'v3.0';
 
     /*
-     * Adress som används för uppkoppling mot servern.
+     * The address of the API server.
      */
     var $address = 'https://api.getanewsletter.com';
 
     /*
-     * Port som används för uppkoppling mot servern
-     */
-    var $port = '433';
-
-    /**
      * The version of the API.
      */
     var $api_version = 'v3';
 
     /*
-     * Innehåller felkod vid eventuella fel från XML-RPC
-     * gränssnittet.
+     * Contains the last error code.
      */
     var $errorCode;
 
     /*
-     * Innehåller felmeddelanden vid eventuella fel från
-     * XML-RPC gränssnittet.
+     * Contains the last error message.
      */
     var $errorMessage;
 
     /*
-     * Den skapade uppkopplingen till servern.
-     */
-    var $xmlrpc;
-
-    /*
-     * Innehåller det krypterade lösenordet som används för
-     * inloggning på Get a Newsletter.
-     */
-    var $encrypted_password;
-
-    /*
-     * Användarnamn på Get a Newsletter
+     * Contains the username. Unused in API version 3.
      */
     var $username;
 
     /*
-     * Lösenord på Get a Newsletter.
+     * Contains the API token.
      */
     var $password;
 
     /*
-     * Resultatet från XML-RPC anropet.
+     * Holds the result of the last successful API call.
      */
-
     var $result;
 
-    /**
-     * The response object of the last call.
+    /*
+     * Holds the response object of the last API call.
      */
     private $response;
 
     /*
      * GAPI()
      *
-     * Konstruktor som skapar en uppkoppling mot XML-RPC gränssnittet
-     * och loggar in användaren.
+     * A constructor. Prepares the interface for work with the API.
      *
-     * Argument
-     * ==========
-     * $username  = Användarnamnet på Get a Newsletter
-     * $password  = Lösenordet på Get a Newsletter
+     * Arguments
+     * =========
+     * $username  = Not used in the API version 3.
+     * $password  = The API token.
      *
      */
-
     function GAPI($username, $password)
     {
         $this->username = $username;
@@ -108,18 +83,16 @@ class GAPI
             ->sendsJson();
 
         Request::ini($template);
-
-        // $this -> login();
     }
 
     /*
      * show_errors()
      *
-     * Funktion för att skriva ut felmeddelanden
+     * Method that returns a formatted error string.
      *
-     * Returvärden
-     * =========
-     * Sträng med felkod och meddelande
+     * Return value
+     * ============
+     * String with the last error code and message.
      *
      */
 
@@ -131,17 +104,15 @@ class GAPI
     /*
      * login()
      *
-     * Funktion för inloggning.
+     * DEPRECATED. Method used to log the user into the API.
+     * Now has the same function as check_login().
      *
-     * Returvärden
-     * =========
-     * Sant/Falskt
+     * Return value
+     * ============
+     * True on success. False on error.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
-     *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
-
     function login()
     {
         return $this->check_login();
@@ -150,21 +121,33 @@ class GAPI
     /*
      * check_login()
      *
-     * Funktion som kontrollerar om det genererade
-     * lösenordet är giltligt.
+     * Method that checks if the token is correct.
      *
-     * Returvärden
-     * =========
-     * Sant/Falskt
+     * Return value
+     * ============
+     * True on success. False on error or when the token is incorrect.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
     function check_login()
     {
         return $this->call_api(Http::GET, 'user/');
     }
 
+    /*
+     * parse_errors($body)
+     *
+     * Internal method that extracts the error messages from
+     * a failed API call.
+     *
+     * Arguments
+     * =========
+     * $body = The raw response body.
+     *
+     * Return value
+     * ============
+     * String with the error messages.
+     */
     private static function parse_errors($body)
     {
         $errors = '';
@@ -185,7 +168,31 @@ class GAPI
         return $errors;
     }
 
-    function call_api($method, $endpoint, $args=null)
+    /*
+     * call_api($method, $endpoint, $args=null)
+     *
+     * Internal method that makes the actual REST calls to the API.
+     *
+     * Arguments
+     * =========
+     * $method      = Method to use for the call. One of the following:
+                      Http::GET,
+     *                Http::POST,
+     *                Http::PUT,
+     *                Http::PATCH;
+     * $endpoint    = The API endpoint, e.g. 'contacts/test@example.com/'.
+     * $args        = Associative array of arguments when the method is Http::POST,
+     *                Http::PUT or Http::PATCH. For example: array('foo' => 'bar')
+     *
+     * $method and $endpoint are mandatory arguments.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     */
+    protected function call_api($method, $endpoint, $args=null)
     {
         $uri = $this->address . '/' . $this->api_version . '/' . $endpoint;
 
@@ -215,30 +222,30 @@ class GAPI
     /*
      * contact_create($email, $first_name=null, $last_name=null, $attributes=null, $mode=null)
      *
-     * Skapar eller uppdaterar en kontakt.
+     * Creates or updates a contact.
      *
-     * Argument
-     * ==========
-     * $email        = E-postadress som ska läggas till
-     * $first_name   = Kontaktens förnamn
-     * $last_name    = Kontaktens efternamn
-     * $attributes   = En array med attribut som ska läggas till/uppdateras för kontakten
-     * $mode         = Anger hur existerande kontakt ska hanteras, följande val finns:
-     *
-     *    (standard)  1 = Returnera felmeddelande om kontakten existerar
-     *                2 = Om kontakt existerar, uppdatera inget och returnera sant.
-     *                3 = Uppdatera kontakten med de nya uppgifterna
-     *                4 = Rensa befintliga uppgifter (namn och attribut) samt infoga nya
-     *
-     * Det är endast $email som är obligatoriskt.
-     *
-     * Returvärden
+     * Arguments
      * =========
-     * Sant/Falskt
+     * $email        = E-mail address of the contact.
+     * $first_name   = Contact's first name.
+     * $last_name    = Contact's last name.
+     * $attributes   = Associative array of the contact's attributes.
+     * $mode         = Specifies how to handle the existing contacts:
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
+     *     (default)  1 = Return the error message if the contact exists.
+     *                2 = If the contact exists return true without updating anything.
+     *                3 = Update the contact. Just the non-null arguments will be used,
+     *                    e.g. passing null to $fist_name means that
+     *                    the first name of the contact won't be changed.
+     *                4 = Overwrite the contact. All arguments will be used.
      *
+     * Only $email is a mandatory argument.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
     function contact_create($email, $first_name = null, $last_name = null, $attributes = array(), $mode = 1)
     {
@@ -270,30 +277,32 @@ class GAPI
     }
 
     /*
-     * subscription_add($email, $list_id, $first_name=null, $last_name=null, $confirmation=False, $api_key=null)
+     * subscription_add(
+     *     $email, $list_id, $first_name = null, $last_name = null, $confirmation = false, $api_key = null,
+     *     $autoresponder = true, $attributes = array()
+     * )
      *
-     * Lägger till en kontakt (om den ej redan existerar) och en prenumeration till ett nyhetsbrev.
+     * Adds a subscriber to a list. If the contact doesn't exist it will create it.
+     * If it does exist, subscription_add() will update the contact's data.
      *
-     * Argument
-     * ==========
-     * $email        = E-postadress som ska läggas till
-     * $list_id      = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
-     * $first_name   = Kontaktens förnamn
-     * $last_name    = Kontaktens efternamn
-     * $confirmation = Ska bekräftelse skickas ut till prenumeranten? Falskt som standard.
-     *                 Krävs om prenumeration är avslutad tidigare
-     * $api_key      = Nyckel för att kunna spåra varifrån en prenumeration kommer, hittas
-     *                 i menyn Kontakter->Listor & API när du är inloggad på Get a Newsletter
-     *
-     * Det är endast $email och $list_id som är obligatoriskt.
-     *
-     * Returvärden
+     * Arguments
      * =========
-     * Sant/Falskt
+     * $email         = E-mail address of the contact.
+     * $list_id       = The newsletter's id hash. Can be obtained with newsletter_show().
+     * $first_name    = Contact's first name.
+     * $last_name     = Contact's last name.
+     * $confirmation  = Not used in the version 3 of the API.
+     * $api_key       = Not used in the version 3 of the API.
+     * $autoresponder = Not used in the version 3 of the API.
+     * $attributes    = Associative array of the contact's attributes.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
+     * Only $email and $list_id are mandatory arguments.
      *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
     function subscription_add(
         $email, $list_id, $first_name = null, $last_name = null, $confirmation = false, $api_key = null,
@@ -331,19 +340,17 @@ class GAPI
     /*
      * contact_delete()
      *
-     * Funktion för att ta bort en kontakt från kontot.
+     * Deletes a contact.
      *
-     * Argument
-     * ==========
-     * $email        = E-postadress för kontakten som ska tas bort
-     *
-     * Returvärden
+     * Arguments
      * =========
-     * Sant/Falskt
+     * $email        = E-mail address of the contact. Mandatory argument.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
+     * Return value
+     * ============
+     * True on success. False on error.
      *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
     function contact_delete($email)
     {
@@ -351,21 +358,26 @@ class GAPI
     }
 
     /*
-     * contact_show()
+     * contact_show($email, $show_attributes = false)
      *
-     * Argument
+     * Used to retrieve detailed information for a contact.
+     *
+     * Arguments
      * =========
-     * $email    = Kontaktens e-postadress
+     * $email           = E-mail address of the contact. Mandatory argument.
+     * $show_attributes = If true, the result will have a field 'attributes',
+     *                    an associative array of all contact attributes in
+     *                    the form ['attribute_name' => 'attribute_value'].
+     *                    The default is false.
      *
-     * Returvärden
-     * =========
-     * Sant/Falskt
+     * Return value
+     * ============
+     * True on success. False on error.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
-     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success, the contacts information will be stored in $result.
      */
-    function contact_show($email, $show_attributes = False)
+    function contact_show($email, $show_attributes = false)
     {
         $attributes = array();
 
@@ -421,20 +433,18 @@ class GAPI
     /*
      * subscription_delete($email, list_id)
      *
-     * Tar bort en prenumeration från ett nyhetsbrev
+     * Removes a subscription.
      *
-     * Argument
+     * Arguments
      * =========
-     * $email     = Kontaktens e-postadress
-     * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
+     * $email     = The e-mail address of the contact.
+     * $list_id   = The newsletter's id hash. Can be obtained with newsletter_show().
      *
-     * Returvärden
-     * =========
-     * Sant/Falskt
+     * Return value
+     * ============
+     * True on success. False on error.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
-     *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
     function subscription_delete($email, $list_id)
     {
@@ -444,15 +454,14 @@ class GAPI
     /*
      * newsletter_show()
      *
-     * Listar befintliga nyhetsbrev
+     * Used to retrieve information for a newsletter.
      *
-     * Returvärden
-     * =========
-     * Sant/Falskt
+     * Return value
+     * ============
+     * True on success. False on error.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
-     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success, the newsletter's data will be stored in $result.
      */
     function newsletters_show()
     {
@@ -473,25 +482,26 @@ class GAPI
         return $ok;
     }
 
-    // TODO: State in doc. that $start and $end are ignored ATM.
     /*
-     * subscription_listing($list_id, $start=null, $end=null)
+     * subscriptions_listing($list_id, $start=null, $end=null)
      *
-     * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
+     * Retrieves the list of subscriptions to a newsletter. Returns maximum of 100 at a time.
      *
-     * Argument
+     * Arguments
      * =========
-     * $list_id   = Sträng som identifierar nyhetsbrevet, fås genom newsletter_show()
-     * $start	= Post som listningen ska börja på
-     * $end 	= Post som listningen ska sluta på
+     * $list_id   = The id of the newsletter.
+     * $start	  = The index of the subscription to start the listing from.
+     * $end 	  = The index of the subscription to stop the listing to.
      *
-     * Returvärden
-     * =========
-     * Array med prenumerationer för ett nyhetsbrev
+     * Warning: $start and $end will be ignored in this version of the interface
+     * and may be subjected to a change in future versions.
      *
-     * Eventuella fel finns i $errorCode
-     * och $errorMessage
+     * Return value
+     * ============
+     * True on success. False on error.
      *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success will store the list of subscriptions in $result.
      */
     function subscriptions_listing($list_id, $start = null, $end = null)
     {
@@ -509,10 +519,22 @@ class GAPI
         return $ok;
     }
 
-    /**
-     * Returns attribute code by given attribute name.
+    /*
+     * attribute_get_code($name)
+     *
+     * Internal method that is used to get the code of an attribute by given name.
+     *
+     * Arguments
+     * =========
+     * $name    = The name of the attribute.
+     *
+     * Return value
+     * ============
+     * The attribute's code on success, null on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
      */
-    private function attribute_get_code($name)
+    protected function attribute_get_code($name)
     {
         $ok = $this->attribute_listing();
         if(!$ok) {
@@ -531,11 +553,41 @@ class GAPI
         return null;
     }
 
+    /*
+     * attribute_create($name)
+     *
+     * Used to create an attribute.
+     *
+     * Arguments
+     * =========
+     * $name    = Attribute's name.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     */
     function attribute_create($name)
     {
         return $this->call_api(Http::POST, 'attributes/', array('name' => $name));
     }
 
+    /*
+     * attribute_delete($name)
+     *
+     * Used to delete an attribute.
+     *
+     * Arguments
+     * =========
+     * $name    = Attribute's name.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     */
     function attribute_delete($name)
     {
         $code = $this->attribute_get_code($name);
@@ -546,6 +598,18 @@ class GAPI
         }
     }
 
+    /*
+     * attribute_listing($name)
+     *
+     * Retrieves the list of all attributes.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success the list of attributes will be stored in $result.
+     */
     function attribute_listing()
     {
         $ok = $this->call_api(Http::GET, 'attributes/');
@@ -560,37 +624,37 @@ class GAPI
         return $ok;
     }
 
-    // TODO: State in doc. that $filter, $start and $end are ignored ATM.
     /*
      * reports_bounces($id, $filter, $start=null, $end=null)
      *
-     * Listar prenumerationer för ett nyhetsbrev, max 100 st i taget
+     * Retrieves the list of the reported bounces. Returns maximum of 100 at a time.
      *
-     * Argument
+     * Arguments
      * =========
-     * $id        = Id för rapporten du vill visa studsar för
-     * $filter    = Används om du vill filtrera resultatet. Ange "hard" för att
-     *              endast returnera adresser med hård studs (permanent fel) och
-     *              "soft" för att endast returnera adresser med temporärt fel. (Valbart)
-     * $start	= Post som listningen ska börja på
-     * $end 	= Post som listningen ska sluta på
+     * $id        = The id of the report.
+     * $filter    = Not implemented yet.
+     * $start	  = The index of the bounce to begin the listing from.
+     * $end 	  = The index of the bounce to end the listing to.
      *
-     * Returvärden
-     * =========
-     * Returnerar en array med följande information för varje rapport:
+     * Warning: $start and $end will be ignored in this version of the interface
+     * and may be subjected to a change in future versions.
      *
-     * email       E-post som har studsat
+     * Return value
+     * ============
+     * True on success. False on error.
      *
-     * status      Status för aktuell studs, ges som en sifferkombination med följande
-     *             format X.X.X. Om statusen börjar på en 5:a är det en hård studs
-     *             (felet är permanent) och om den börjar på 4:a är det en mjuk studs
-     *             (temporärt fel). Vill du ha mer information om statuskodernas
-     *             betydelse så kolla i manualen.
+     * In case of an error $errorCode and $errorMessage will be updated.
      *
-     * Eventuella fel finns i $errorCode och $errorMessage
+     * On success, the list of bounces will be stored in $result.
+     * The result will be an array of dictionaries with the following fields:
      *
+     * email       = The e-mail address of the recipient.
+     * status      = The status of the bounce that will be given in the format X.X.X, where
+     *               X are numbers. If the first one is 5 then this is a hard (permanent) bounce,
+     *               if it's 4 - the bounce is a soft (temporary) bounce. More information
+     *               about the bounce status codes can be found in the knowledge base:
+     *               http://help.getanewsletter.com/
      */
-
     function reports_bounces($id, $filter = null, $start = null, $end = null)
     {
         $ok = $this->call_api(Http::GET, 'reports/' . $id . '/bounces/?paginate_by=100');
@@ -606,18 +670,30 @@ class GAPI
         return $ok;
     }
 
-    // TODO: State in doc. that $filter, $start and $end are ignored ATM.
     /*
      * reports_link_clicks($id, $filter, $start=null, $end=null)
      *
-     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.link_clicks/
+     * This method is obsolete. Use reports_clicks_per_link() instead.
      *
      */
     function reports_link_clicks($id, $filter = null, $start = null, $end = null)
     {
-        // TODO: See how to get all unique clicks or add $link_id argument.
-        $link_id = '???';
-        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/' . $link_id . '/?paginate_by=100');
+        throw new Exception('This method is obsolete. Use reports_clicks_per_link().');
+    }
+
+    /*
+     * reports_clicks_per_link($id, $link_id)
+     *
+     * Retrieves the list of clicks for given link.
+     *
+     * Attributes
+     * ==========
+     * $id      = The id of the report.
+     * $link_id = The is of the link. Can be obtained from
+     */
+    function reports_clicks_per_link($id, $link_id)
+    {
+        $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/' . $link_id . '/clicks/?paginate_by=100');
         if ($ok) {
             $this->result = array();
             foreach ($this->response->body['results'] as $link) {
@@ -636,10 +712,24 @@ class GAPI
     /*
      * reports_links($id)
      *
-     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.links/
+     * Retrieves the list of links in a newsletter and information about them.
      *
+     * Arguments
+     * =========
+     * $id      = The id of the report.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     *
+     * On success, the list of links will be stored in $result.
+     * The result will be an array of dictionaries with the following fields:
+     *
+     * count    = The number of unique clicks on that link.
+     * link     = The URL of the link.
      */
-
     function reports_links($id)
     {
         $ok = $this->call_api(Http::GET, 'reports/' . $id . '/links/?ordering=id');
@@ -648,7 +738,8 @@ class GAPI
             foreach ($this->response->body['results'] as $link) {
                 $this->result[] = array(
                     'count' => $link['unique_clicks'],
-                    'link' => $link['link']
+                    'link' => $link['link'],
+                    'id' => $link['id']
                 );
             }
         }
@@ -656,13 +747,22 @@ class GAPI
     }
 
     /*
-     * reports_listing($latest)
+     * reports_listing($latest = true)
      *
-     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.listing
+     * Retrieves the list of reports.
      *
+     * Arguments
+     * =========
+     * $latest  = If true will list the latest reports first. Default is true.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success, the list of reports will be stored in $result.
      */
-
-    function reports_listing($latest = True)
+    function reports_listing($latest = true)
     {
         $ordering = $latest ? '-sent' : 'sent';
         $ok = $this->call_api(Http::GET, 'reports/?orderging=' . $ordering);
@@ -686,10 +786,19 @@ class GAPI
     /*
      * reports_opens($id)
      *
-     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.opens/
+     * Retrieves the list of the reported opens. Returns maximum of 100 at a time.
      *
+     * Arguments
+     * =========
+     * $id        = The id of the report.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success, the list of opens will be stored in $result.
      */
-
     function reports_opens($id)
     {
         $ok = $this->call_api(Http::GET, 'reports/' . $id . '/opens/?paginate_by=100');
@@ -707,12 +816,26 @@ class GAPI
         return $ok;
     }
 
-    // TODO: State in doc. that $start and $end are ignored ATM.
     /*
-     * reports_unsubscribes($id, $filter, $start=null, $end=null)
+     * reports_unsubscribes($id, $start = null, $end = null)
      *
-     * Dokumentation: http://admin.getanewsletter.com/api/v0.1/reports.unsubscribes/
+     * Retrieves the list of the reported unsubscribes. Returns maximum of 100 at a time.
      *
+     * Arguments
+     * =========
+     * $id        = The id of the report.
+     * $start     = The index of the bounce to begin the listing from.
+     * $end       = The index of the bounce to end the listing to.
+     *
+     * Warning: $start and $end will be ignored in this version of the interface
+     * and may be subjected to a change in future versions.
+     *
+     * Return value
+     * ============
+     * True on success. False on error.
+     *
+     * In case of an error $errorCode and $errorMessage will be updated.
+     * On success, the list of unsubscribes will be stored in $result.
      */
     function reports_unsubscribes($id, $start = null, $end = null)
     {
@@ -728,5 +851,4 @@ class GAPI
         }
         return $ok;
     }
-
 }
