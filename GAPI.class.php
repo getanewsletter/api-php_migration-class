@@ -5,7 +5,7 @@ use \Httpful\Http;
 use \Httpful\Request;
 
 /*
- * For more information on Get a Newsletter's API visit http://admin.getanewsletter.com/api/.
+ * For more information on Get a Newsletter's API visit https://api.getanewsletter.com/.
  *
  * If you have any questions, please send us an email at support@getanewsletter.com.
  */
